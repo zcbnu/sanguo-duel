@@ -18,3 +18,5 @@
 .card.trick{background:#e6d7ff}.card.weapon,.card.armor{background:#cfe8ff}.k-zhan b{color:#c0392b}.k-bi b{color:#2471a3}.k-yao b{color:#1e8449}
 .float{position:absolute;right:20px;top:10px;font-size:28px;font-weight:bold;animation:fl .9s forwards;text-shadow:2px 2px 0 #1b1424}.float.bad{color:#ff4d6d}.float.good{color:#7dff9a}@keyframes fl{to{transform:translateY(-30px);opacity:0}}
 .shake{animation:sh .3s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+#modes,#lobby{text-align:center;margin:6px 0;font-size:14px}#lobby input{width:90%;font:inherit;padding:4px;border-radius:6px;border:2px solid #1b1424;margin:4px 0}

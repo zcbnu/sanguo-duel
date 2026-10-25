@@ -9,6 +9,14 @@ simayi:['#4a3a5a',2,'tall','#b48cff'],liubei:['#3a2a1a',1,'crown','#f2c14e'],gua
 zhangfei:['#141414',2,'band','#ff8a3d'],zhugeliang:['#2a2a2a',0,'scholar','#ffffff'],sunquan:['#7a3a1a',1,'crown','#f2c14e'],
 zhouyu:['#2a1a1a',0,'band','#ff5a5a'],ganning:['#5a3a1a',1,'feather','#ffd23d'],sunshangxiang:['#3a1a1a',0,'bun','#ff7ab6'],
 lvbu:['#2a1a1a',0,'pheasant','#ff3d3d'],huatuo:['#dcdcdc',2,'scholar','#8bd17c'],diaochan:['#1a1020',0,'bun','#ff9ad5'],yuanshao:['#3a2a1a',1,'helm','#f2c14e']};
+Object.assign(look,{xuchu:['#1a1a1a',1,'band','#c0c6d0'],dianwei:['#2a1a10',2,'helm','#ff8a3d'],xunyu:['#2a2a3a',1,'scholar','#9ad0ff'],guojia:['#3a2a3a',0,'tall','#7c5cff'],
+caoren:['#2b2b3a',2,'helm','#3b6fd8'],zhanghe:['#3a3a3a',0,'feather','#9ad0ff'],xuhuang:['#2a2016',1,'band','#c0c6d0'],caopi:['#1a1a2a',0,'crown','#b48cff'],
+zhaoyun:['#1a1a2a',0,'helm','#ffffff'],machao:['#4a2a1a',0,'pheasant','#ffffff'],huangzhong:['#e0e0e0',2,'helm','#f2c14e'],weiyan:['#1a1010',1,'patch','#d8463b'],
+pangtong:['#3a2a1a',1,'tall','#8bd17c'],jiangwei:['#2a1a1a',0,'band','#2fa35a'],huangyueying:['#5a3a1a',0,'bun','#f2c14e'],fazheng:['#2a2a2a',1,'scholar','#d8463b'],
+lusu:['#2a1a1a',1,'scholar','#2fa35a'],lvmeng:['#1a1a1a',1,'helm','#2fa35a'],luxun:['#3a2a1a',0,'tall','#ff5a5a'],taishici:['#2a1a10',1,'feather','#ff3d3d'],
+huanggai:['#cfcfcf',2,'band','#ff8a3d'],zhoutai:['#1a1a1a',1,'patch','#2fa35a'],daqiao:['#1a1020',0,'bun','#9ad0ff'],xiaoqiao:['#2a1020',0,'bun','#ffd23d'],
+dongzhuo:['#1a1a1a',2,'crown','#8a8f9c'],jiaxu:['#555566',2,'tall','#444'],yanliang:['#2a1a1a',2,'helm','#d8463b'],wenchou:['#1a1a1a',1,'pheasant','#8a8f9c'],
+zhangjiao:['#cfcf9a',2,'scholar','#ffd23d'],gongsunzan:['#e8e8e8',1,'helm','#ffffff'],mateng:['#4a3a2a',2,'feather','#c0c6d0'],caiwenji:['#1a1020',0,'bun','#b48cff']});
 for(const g of GENERALS){const [hair,beard,hat,acc]=look[g.id];const fc=FACTIONS[g.f].c;
  const grid=base.map(r=>r.split(''));
  if(beard==0){grid[9]='....SSSSSSSS....'.split('');grid[10]='......SSSS......'.split('');}
