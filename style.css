@@ -1,0 +1,20 @@
+*{box-sizing:border-box}body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:#2a1f3d;color:#fbeed7;background-image:radial-gradient(#3a2b52 1px,transparent 1px);background-size:8px 8px;min-height:100vh}
+#select,#battle{max-width:560px;margin:0 auto;padding:10px}h1{text-align:center;margin:8px 0 0;font-size:34px;color:#ffd23d;text-shadow:3px 3px 0 #1b1424;letter-spacing:6px}
+.sub{text-align:center;margin:4px}#stats{text-align:center;font-size:13px;opacity:.8}button{font:inherit;background:#ffd23d;color:#1b1424;border:3px solid #1b1424;border-radius:8px;padding:6px 12px;box-shadow:0 3px 0 #1b1424;cursor:pointer;margin:3px}button:disabled{opacity:.4;cursor:default}
+#grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.gcard{background:#3d2e57;border:3px solid #1b1424;border-radius:10px;overflow:hidden;cursor:pointer;box-shadow:0 4px 0 var(--fc)}.gcard:hover{transform:translateY(-2px)}
+.gcard img,.portrait img{width:100%;display:block;image-rendering:pixelated}.gn{font-size:13px;padding:3px;text-align:center}.fac{background:var(--fc,#888);color:#fff;border-radius:4px;padding:0 4px;margin-right:3px;font-size:12px}
+.modal{position:fixed;inset:0;margin:auto;width:min(92vw,380px);height:fit-content;max-height:90vh;overflow:auto;background:#fbeed7;color:#1b1424;border:4px solid #1b1424;border-radius:12px;padding:14px;z-index:9;box-shadow:0 6px 0 #1b1424;text-align:center}
+.modal img{width:120px;image-rendering:pixelated;border:3px solid #1b1424;border-radius:8px}.modal p{text-align:left}.hide{display:none!important}
+#ruleBox{background:#fbeed7;color:#1b1424;border-radius:10px;padding:10px;font-size:13px;margin-top:8px}#ruleBox p{margin:3px 0}
+.seat{display:flex;gap:10px;background:#3d2e57;border:3px solid #1b1424;border-radius:12px;padding:8px;position:relative}.portrait{width:88px;flex:none;border:3px solid #1b1424;border-radius:8px;overflow:hidden;position:relative;background:var(--fc)}.portrait .fac{position:absolute;top:2px;left:2px}
+.info{flex:1;font-size:13px}.name{font-size:17px;font-weight:bold}.name em{font-size:11px;background:#ffd23d;color:#1b1424;padding:0 4px;border-radius:4px;font-style:normal}
+.hp i{display:inline-block;width:14px;height:14px;margin-right:3px;background:#555;border:2px solid #1b1424;border-radius:3px}.hp i.on{background:#ff4d6d}
+.skills span,.equip span{display:inline-block;background:#ffd23d;color:#1b1424;border-radius:4px;padding:0 5px;margin:2px 3px 0 0;cursor:help}.equip span{background:#9ad0ff}
+.minis{display:flex;justify-content:center;gap:2px;margin:4px 0;min-height:30px;flex-wrap:wrap}.card.back{width:20px;height:28px;background:repeating-linear-gradient(45deg,#d8463b 0 4px,#a8302a 4px 8px);border:2px solid #1b1424;border-radius:4px}
+#table{background:#1f5a3a;border:3px solid #1b1424;border-radius:12px;padding:6px;margin:6px 0;height:150px;display:flex;flex-direction:column}#deckinfo{font-size:12px;opacity:.8}#log{overflow:auto;font-size:13px;flex:1}#log div:first-child{color:#ffd23d}
+#actions{text-align:center;min-height:44px;margin:6px 0}.wait{opacity:.7}
+#hand{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding-bottom:20px}.card{width:76px;height:104px;background:#fbeed7;color:#1b1424;border:3px solid #1b1424;border-radius:8px;padding:4px;display:flex;flex-direction:column;opacity:.55;transition:.1s}
+.card b{font-size:18px}.card small{font-size:9px;line-height:1.2;overflow:hidden}.card.ok{opacity:1;cursor:pointer;box-shadow:0 3px 0 #1b1424}.card.ok:hover{transform:translateY(-4px)}.card.sel{transform:translateY(-10px);outline:3px solid #ff4d6d}
+.card.trick{background:#e6d7ff}.card.weapon,.card.armor{background:#cfe8ff}.k-zhan b{color:#c0392b}.k-bi b{color:#2471a3}.k-yao b{color:#1e8449}
+.float{position:absolute;right:20px;top:10px;font-size:28px;font-weight:bold;animation:fl .9s forwards;text-shadow:2px 2px 0 #1b1424}.float.bad{color:#ff4d6d}.float.good{color:#7dff9a}@keyframes fl{to{transform:translateY(-30px);opacity:0}}
+.shake{animation:sh .3s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
