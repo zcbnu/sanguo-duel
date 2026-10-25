@@ -433,15 +433,15 @@ function aiChoose(p,t){const h=p.hand;const f=k=>h.find(c=>c.k===k&&canPlay(p,c)
 function shake(p){const el=$(p.i?'#ai':'#me');el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');}
 function hpBar(p){let s='';for(let i=0;i<p.maxHp;i++)s+=`<i class="${i<p.hp?'on':''}"></i>`;return s;}
 function seat(p){const fc=FACTIONS[p.g.f];
- return `<div class="portrait" style="--fc:${fc.c}"><img src="assets/portraits/${p.g.id}.svg" alt=""><span class="fac">${fc.n}</span></div>
- <div class="info"><div class="name">${p.g.name}${G.cur===p&&!G.over?' <em>行动中</em>':''}</div><div class="hp">${hpBar(p)}</div>
+ return `<div class="portrait f-${p.g.f}"><img src="assets/portraits/${p.g.id}.svg" alt="${p.g.name}"><span class="fac">${fc.n}</span></div>
+ <div class="info"><div class="name">${p.g.name}${G.cur===p&&!G.over?' <em>行动中</em>':''}</div><div class="hp">${hpBar(p)}<span class="hpnum">体力 ${p.hp}/${p.maxHp}</span></div>
  <div class="skills">${p.g.skills.map(s=>`<span title="${s.t}">${s.n}</span>`).join('')}</div>
  <div class="equip">${['weapon','armor'].map(s=>p[s]?`<span title="${CARD_DEFS[p[s].k].t}">${s==='weapon'?'⚔':'🛡'}${cn(p[s].k)}</span>`:'').join('')}</div>
  <div class="cnt">手牌 ${p.hand.length}</div></div>`;}
 function render(){if(!G.P)return;if(window.HARNESS){for(const p of G.P)if(p.hand.some(c=>!c))throw new Error('undef card '+p.g.id+' '+new Error().stack);}if(NET&&NET.role==='host'&&G.P[1].remote)send(snap());const [me,ai]=G.P;
  $('#ai').innerHTML=seat(ai);$('#me').innerHTML=seat(me);
  $('#aihand').innerHTML=ai.hand.map(()=>'<div class="card back"></div>').join('');
- $('#deckinfo').textContent=`牌堆 ${G.deck.length}　弃牌 ${G.discard.length}`;
+ $('#deckinfo').textContent=`牌堆 ${G.deck.length}`;$('#discardinfo').textContent=`弃牌 ${G.discard.length}`;
  const hand=$('#hand');hand.innerHTML='';
  for(const c of me.hand){const D=CARD_DEFS[c.k];const el=document.createElement('div');el.className=`card ${D.type} k-${c.k}`;el.innerHTML=`<b>${D.n}</b><i class="suit ${isRed(c)?'red':''}">${cs(c)}</i><small>${D.t}</small>`;el.title=D.t;
   if(G.phase==='play'&&G.cur===me&&canPlay(me,c)){el.classList.add('ok');el.onclick=()=>resolveUser({t:'card',c});}
@@ -449,12 +449,12 @@ function render(){if(!G.P)return;if(window.HARNESS){for(const p of G.P)if(p.hand
   hand.appendChild(el);}
  const bar=$('#actions');bar.innerHTML='';
  if(G.over)return;
- const btn=(t,fn,dis)=>{const b=document.createElement('button');b.textContent=t;b.disabled=!!dis;b.onclick=fn;bar.appendChild(b);};
+ const btn=(t,fn,dis,primary=true)=>{const b=document.createElement('button');b.textContent=t;b.disabled=!!dis;b.className=primary?'btn-primary':'btn-secondary';b.onclick=fn;bar.appendChild(b);};
  if(G.phase==='play'&&G.cur===me){const act=activeOf(me);
   if(act)btn(`技能·${act.s.n}`,()=>startSkill(me,act),usedUp(me,act)||!act.a.can(me));
   btn('结束出牌',()=>resolveUser({t:'end'}));}
  if(G.phase==='discard')btn(`弃牌 ${G.sel.length}/${G.needSel}`,()=>resolveUser(true),G.sel.length!==G.needSel);
- if(G.phase==='skill'){btn(`确认 ${G.sel.length}${G.selAct&&G.selAct.a.needAny?'':'/'+G.needSel}`,()=>{const cards=G.sel;G.sel=[];G.selFilter=null;G.phase='busy';G.skillDone(cards);},!(G.selAct&&validSel(G.selAct,G.sel)));btn('取消',()=>{G.sel=[];G.selFilter=null;G.phase='play';render();});}
+ if(G.phase==='skill'){btn(`确认 ${G.sel.length}${G.selAct&&G.selAct.a.needAny?'':'/'+G.needSel}`,()=>{const cards=G.sel;G.sel=[];G.selFilter=null;G.phase='busy';G.skillDone(cards);},!(G.selAct&&validSel(G.selAct,G.sel)));btn('取消',()=>{G.sel=[];G.selFilter=null;G.phase='play';render();},false,false);}
  if(!G.phase||G.cur!==me)bar.innerHTML='<span class="wait">'+(G.cur===me?'…':(NET?'对手思考中…':'AI 思考中…'))+'</span>';
 }
 function startSkill(p,act){const go=cards=>{if(NET&&NET.role==='guest'){resolveUser({t:'skill',cids:cards.map(c=>c.id)});return;}markUsed(p,act);if(!act.a.silent)log(`${p.g.name}发动【${act.s.n}】`);resolveUser({t:'skill',run:()=>act.a.run(p,cards)});};
@@ -512,11 +512,23 @@ function joinRoom(code){if(typeof Peer==='undefined'){alert('联机组件加载�
 function tryStartNet(){if(NET.myPick&&NET.guestPick)start(NET.myPick,NET.guestPick,true);else if(NET.myPick)$('#lobby').innerHTML='已选择，等待对手选将…';}
 
 // ---- 选将 ----
-let OFFER=[];
-function selectScreen(ids){const grid=$('#grid');grid.innerHTML='';OFFER=ids||shuffle(GENERALS.map(g=>g.id)).slice(0,8);
- for(const id of OFFER){const g=GENERALS.find(x=>x.id===id);const fc=FACTIONS[g.f];const el=document.createElement('div');el.className='gcard';el.style.setProperty('--fc',fc.c);
-  el.innerHTML=`<img src="assets/portraits/${g.id}.svg" alt=""><div class="gn"><span class="fac">${fc.n}</span>${g.name} <small>♥${g.hp}</small></div>`;
-  el.onclick=()=>showDetail(g);grid.appendChild(el);}
+let OFFER=[],PICK=null;
+function fillSlot(g){PICK=g;const body=$('#picked-body'),btn=$('#confirm');
+ if(!g){body.innerHTML='<p class="slot-empty">点击左侧武将</p>';btn.disabled=true;return;}
+ const fc=FACTIONS[g.f];
+ body.innerHTML=`<img alt="${g.name}" src="assets/portraits/${g.id}.svg"><p class="slot-name"><span class="fac">${fc.n}</span>${g.name}</p><p class="slot-hp">体力 ${g.hp}</p><div class="slot-skills">${g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('')}</div>`;
+ btn.disabled=false;}
+function confirmPick(){const g=PICK;if(!g)return;
+ if(!NET){const pool=GENERALS.filter(x=>x!==g);start(g,pool[Math.random()*pool.length|0],false);return;}
+ if(NET.role==='guest'){send({type:'pick',id:g.id});$('#grid').innerHTML='';$('#lobby').innerHTML=`你选择了${g.name}，等待房主选将…`;$('#confirm').disabled=true;return;}
+ if(!NET.conn)return;NET.myPick=g;$('#grid').innerHTML='';$('#confirm').disabled=true;tryStartNet();}
+function selectScreen(ids){const root=$('#select');root.classList.remove('screen-lobby');root.classList.add('screen-select');fillSlot(null);
+ const grid=$('#grid');grid.innerHTML='';OFFER=ids||shuffle(GENERALS.map(g=>g.id)).slice(0,8);
+ for(const id of OFFER){const g=GENERALS.find(x=>x.id===id);const fc=FACTIONS[g.f];const el=document.createElement('div');el.className=`gcard f-${g.f}`;
+  const title=g.skills.map(s=>`【${s.n}】${s.t}`).join('\n');
+  el.innerHTML=`<img alt="${g.name}" src="assets/portraits/${g.id}.svg"><div class="faction-bar"></div><div class="gn"><span class="fac">${fc.n}</span>${g.name}<small>体力 ${g.hp}</small></div><div class="skill-line" title="${title}">${g.skills[0].t}</div>`;
+  el.onclick=()=>{for(const n of grid.children)n.classList.remove('is-picked');if(PICK===g){fillSlot(null);return;}el.classList.add('is-picked');fillSlot(g);};
+  grid.appendChild(el);}
  const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');$('#stats').textContent=`人机战绩 ${st.w} 胜 ${st.l} 负 · 武将池 ${GENERALS.length} 位，每局随机 8 位`;}
 function showDetail(g){const d=$('#detail');const fc=FACTIONS[g.f];
  d.innerHTML=`<img src="assets/portraits/${g.id}.svg"><h3>${fc.n}·${g.name}　♥${g.hp}</h3>${g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('')}<button id="go">选择出战</button> <button id="cl">返回</button>`;
@@ -536,7 +548,9 @@ async function start(g,ag,net){
  while(!G.over){await turn(G.P[cur]);cur=1-cur;}}
 function initLobby(){const room=new URLSearchParams(location.search).get('room');
  $('#pve').onclick=()=>{selectScreen();};$('#host').onclick=()=>{$('#modes').classList.add('hide');hostRoom();};
- if(room)joinRoom(room.toUpperCase());else selectScreen();}
+ const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');$('#stats').textContent=`人机战绩 ${st.w} 胜 ${st.l} 负 · 武将池 ${GENERALS.length} 位，每局随机 8 位`;
+ $('#confirm').onclick=confirmPick;
+ if(room)joinRoom(room.toUpperCase());}
 $('#rules').onclick=()=>$('#ruleBox').classList.toggle('hide');
 $('#ruleBox').innerHTML='<h3>规则</h3><p>回合：摸2张 → 出牌 → 弃牌至手牌上限（=当前体力）。把对方体力打到0即获胜。双方起手4张。</p><p><b>花色与判定</b>：每张牌有花色（♠♥♣♦）与点数（A–K），判定=亮出牌堆顶一张牌；拼点=双方各出一张手牌比点数。</p><p><b>护体</b>：回合开始时对方体力全满，则本回合无法将其击杀（至多打到1）。</p><p><b>兵疲</b>：第21回合起，每名角色回合开始时失去1点体力。</p>'+Object.values(CARD_DEFS).map(d=>`<p><b>【${d.n}】</b>×${d.cnt} ${d.t}</p>`).join('');
 initLobby();
