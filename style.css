@@ -147,3 +147,109 @@ button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .gcard{width:auto}
   .slot-skills{max-height:72px; overflow:auto}
 }
+#battle{
+  width:min(1120px,100%); margin:0 auto; box-sizing:border-box;
+  height:100vh; height:100dvh; overflow:auto;
+  display:grid; grid-template-rows:auto minmax(120px,1fr) auto auto;
+  gap:var(--s-3); padding:var(--s-3);
+  padding-bottom:calc(var(--s-3) + env(safe-area-inset-bottom));
+}
+.enemy-bar{display:flex; gap:var(--s-3); align-items:center}
+.enemy-bar .seat{flex:1; min-width:0}
+#aihand{flex:1; min-width:0}
+.seat{
+  display:flex; gap:var(--s-3); position:relative;
+  background:var(--ink-2); border:3px solid var(--paper-ink); border-radius:12px; padding:var(--s-2);
+}
+.portrait{
+  width:96px; flex:none; position:relative; overflow:hidden;
+  border:3px solid var(--paper-ink); border-radius:6px; background:var(--wood);
+}
+.portrait.f-wei{background:var(--wei)}
+.portrait.f-shu{background:var(--shu)}
+.portrait.f-wu{background:var(--wu)}
+.portrait.f-qun{background:var(--qun-gold)}
+.portrait img{width:100%; display:block; object-fit:cover; object-position:center; image-rendering:pixelated}
+.portrait .fac{position:absolute; top:4px; left:4px}
+.info{flex:1; min-width:0; font-size:14px}
+.name{font-size:16px; font-weight:700; line-height:1.2}
+.name em{font-size:12px; font-style:normal; background:var(--gold); color:var(--paper-ink); padding:0 4px; border-radius:4px}
+.hp{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-1)}
+.hp i{
+  width:16px; height:16px; display:inline-block; box-sizing:border-box;
+  background:var(--pip-empty); border:2px solid var(--paper-ink); border-radius:3px;
+}
+.hp i.on{background:var(--pip)}
+.hpnum{color:var(--text); font-size:14px}
+.skills span,.equip span{
+  display:inline-block; background:var(--gold); color:var(--paper-ink);
+  border-radius:4px; padding:0 5px; margin:2px var(--s-1) 0 0; cursor:help;
+}
+.equip span{background:var(--equip)}
+.minis{display:flex; flex-wrap:nowrap; gap:2px; overflow-x:auto; min-height:40px}
+#table{
+  background:var(--mat); border:3px solid var(--paper-ink); border-radius:12px;
+  padding:var(--s-3); display:grid; grid-template-rows:auto 1fr; gap:var(--s-3); min-height:0;
+}
+.zones{display:grid; grid-template-columns:1fr 1fr; gap:var(--s-3)}
+#deckinfo,#discardinfo{
+  min-width:120px; min-height:88px; box-sizing:border-box;
+  border:3px solid var(--paper-ink); border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--gold); font-size:20px; font-weight:700; line-height:1.2;
+}
+#deckinfo{background:var(--mat)}
+#discardinfo{background:var(--discard)}
+#log{overflow:auto; min-height:0; color:var(--text); font-size:14px; line-height:1.45}
+#log div:first-child{color:var(--gold)}
+.hand-row{display:grid; grid-template-columns:1fr 200px; gap:var(--s-3); align-items:end}
+#hand{
+  display:flex; flex-wrap:nowrap; gap:var(--s-2); min-width:0;
+  overflow-x:auto; overflow-y:auto; padding-top:20px; -webkit-overflow-scrolling:touch;
+}
+#actions{display:flex; flex-direction:column; gap:var(--s-2)}
+#actions button{width:100%; white-space:normal}
+.card{
+  width:96px; height:136px; flex:none; box-sizing:border-box;
+  background:var(--paper); color:var(--paper-ink);
+  border:3px solid var(--paper-ink); border-radius:8px; box-shadow:0 3px 0 #0a0908;
+  padding:4px; display:flex; flex-direction:column; opacity:1;
+  transition:transform .1s;
+}
+.card:not(.ok):not(.back){filter:grayscale(0.35)}
+.card.ok{filter:none; cursor:pointer}
+.card.ok:hover{transform:translateY(-6px)}
+.card.sel{transform:translateY(-12px); outline:3px solid var(--vermillion)}
+.card b{font-size:16px; line-height:1.2}
+.card small{font-size:12px; line-height:1.35; overflow:hidden}
+.card.trick{background:var(--trick)}
+.card.weapon,.card.armor{background:var(--equip)}
+.k-zhan b{color:var(--zhan)}
+.k-bi b{color:var(--bi)}
+.k-yao b{color:var(--yao)}
+.card .suit{font-style:normal; font-size:12px; color:var(--paper-ink)}
+.card .suit.red{color:#9d2b22}
+.card.back{
+  width:28px; height:40px; padding:0;
+  background:repeating-linear-gradient(45deg,var(--vermillion) 0 4px,#8e2a22 4px 8px);
+  border:2px solid var(--paper-ink); border-radius:4px; box-shadow:none;
+}
+.wait{color:var(--text-muted)}
+.float{
+  position:absolute; right:20px; top:10px; font-size:28px; font-weight:700;
+  animation:fl .9s forwards; text-shadow:2px 2px 0 #14110e;
+}
+.float.bad{color:var(--float-bad)}
+.float.good{color:var(--float-good)}
+@keyframes fl{to{transform:translateY(-30px);opacity:0}}
+.shake{animation:sh .3s}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media (max-width:799px){
+  .enemy-bar{flex-direction:column; align-items:stretch}
+  .portrait{width:72px}
+  .hp i{width:14px; height:14px}
+  .hand-row{grid-template-columns:1fr}
+  #actions{flex-direction:row; flex-wrap:wrap}
+  .card{width:72px; height:104px}
+  .card.back{width:28px; height:40px}
+}
