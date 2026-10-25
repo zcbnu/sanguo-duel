@@ -80,3 +80,70 @@ button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   border:2px solid var(--paper-ink); border-radius:8px;
   font:inherit; font-size:14px; padding:var(--s-2);
 }
+#select.screen-select{
+  width:min(1120px,100%); margin:0 auto;
+  height:100vh; height:100dvh;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+#select.screen-select h1{font-size:24px; line-height:1.2; letter-spacing:0.08em}
+#select.screen-select .mast{flex:none; padding:var(--s-2) var(--s-4) 0; text-align:center}
+.screen-select #modes .btn-primary{
+  background:transparent; color:var(--gold); border:2px solid var(--gold-line);
+  box-shadow:0 3px 0 var(--paper-ink);
+}
+.select-layout{flex:1; min-height:0; padding:var(--s-4)}
+#grid{align-content:start}
+.gcard{
+  width:168px; height:248px; display:flex; flex-direction:column;
+  background:var(--ink-2); color:var(--text); cursor:pointer; overflow:hidden;
+  border:4px solid var(--paper-ink); border-radius:10px;
+  box-shadow:inset 0 0 0 2px var(--gold-line),0 6px 0 #0a0908;
+  transition:transform .1s;
+}
+.gcard img{
+  width:100%; height:148px; display:block; object-fit:cover; object-position:center;
+  image-rendering:pixelated;
+}
+.faction-bar{height:8px; width:100%; flex:none}
+.gcard.f-wei .faction-bar{background:var(--wei)}
+.gcard.f-shu .faction-bar{background:var(--shu)}
+.gcard.f-wu .faction-bar{background:var(--wu)}
+.gcard.f-qun .faction-bar{background:var(--qun-gold); box-shadow:inset 0 -4px 0 var(--qun-purple)}
+.gn{
+  display:flex; align-items:center; gap:var(--s-1);
+  padding:var(--s-2) var(--s-2) 0; font-size:16px; font-weight:700; line-height:1.2;
+}
+.gn small{margin-left:auto; color:var(--gold); font-size:12px; font-weight:700}
+.fac{
+  display:inline-block; background:var(--ink); color:var(--text);
+  border-radius:4px; padding:0 6px; font-size:12px; font-weight:700;
+}
+.skill-line{
+  margin-top:auto; padding:0 var(--s-2) var(--s-2);
+  color:var(--text-muted); font-size:12px; line-height:1.35;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.gcard:hover{transform:translateY(-6px)}
+.gcard.is-picked{outline:3px solid var(--gold); outline-offset:2px}
+#picked{
+  background:var(--wood); border:3px solid var(--paper-ink); border-radius:12px;
+  padding:var(--s-4); display:flex; flex-direction:column; gap:var(--s-3); min-height:0;
+}
+#picked-body{min-height:0}
+#picked img{width:120px; image-rendering:pixelated; border:3px solid var(--paper-ink); border-radius:6px}
+.slot-name{margin:0; font-size:16px; font-weight:700}
+.slot-hp{margin:0; color:var(--gold)}
+.slot-skills p{margin:var(--s-2) 0; font-size:14px; line-height:1.45}
+.slot-empty{margin:0; color:var(--text-muted)}
+#confirm{width:100%}
+@media (min-width:800px){
+  .select-layout{display:grid; grid-template-columns:1fr 300px; gap:var(--s-5)}
+  #grid,#picked{overflow:auto; min-height:0}
+  #grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,168px)); gap:var(--s-3); justify-content:start}
+}
+@media (max-width:799px){
+  .select-layout{display:grid; grid-template-rows:1fr auto; gap:var(--s-3)}
+  #grid{overflow:auto; min-height:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:var(--s-2)}
+  .gcard{width:auto}
+  .slot-skills{max-height:72px; overflow:auto}
+}
