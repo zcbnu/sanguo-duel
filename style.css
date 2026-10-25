@@ -253,3 +253,7 @@ button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .card{width:72px; height:104px}
   .card.back{width:28px; height:40px}
 }
+.gcard img.portrait-oil,
+#picked img.portrait-oil,
+.portrait img.portrait-oil,
+.modal img.portrait-oil{image-rendering:auto}
