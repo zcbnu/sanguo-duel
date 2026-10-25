@@ -1,5 +1,5 @@
 # 三国对决 Sanguo Duel
-原创三国主题 1v1 人机卡牌对战（浏览器）。16 位武将、原创技能与卡牌、卡通像素立绘（`tools/portraits.js` 生成）。
+原创三国主题 1v1 人机卡牌对战（浏览器）。16 位武将、原创技能与卡牌。caocao、guanyu、zhouyu、lvbu、zhugeliang、diaochan、dianwei、huatuo 使用写实油画 PNG，其余武将仍用 `tools/portraits.js` 生成的卡通像素 SVG。
 
 ## v2
 - 武将池扩展到 48 位（新增 32 位原创技能武将，魏蜀吴群各 12），每局随机给 8 位候选。
