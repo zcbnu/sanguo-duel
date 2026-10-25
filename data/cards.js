@@ -1,8 +1,8 @@
 // 原创卡牌：[key, 名称, 类型, 数量, 说明]
 window.CARD_DEFS = {
- zhan:{n:'斩',type:'basic',cnt:24,t:'对对方造成1点伤害，对方可打出【避】抵消。每回合限1张。'},
- bi:{n:'避',type:'basic',cnt:14,t:'抵消一张【斩】或【箭雨】。'},
- yao:{n:'药',type:'basic',cnt:8,t:'回复1点体力；濒死时也可使用。'},
+ zhan:{n:'斩',type:'basic',cnt:28,t:'对对方造成1点伤害，对方可打出【避】抵消。每回合限1张。'},
+ bi:{n:'避',type:'basic',cnt:17,t:'抵消一张【斩】或【箭雨】。'},
+ yao:{n:'药',type:'basic',cnt:10,t:'回复1点体力；濒死时也可使用。'},
  yexi:{n:'夜袭',type:'trick',cnt:3,t:'获得对方1张随机手牌。'},
  liangcao:{n:'粮草',type:'trick',cnt:3,t:'摸2张牌。'},
  fenghuo:{n:'烽火',type:'trick',cnt:2,t:'对方须弃1张【斩】，否则受到1点伤害。'},
@@ -14,4 +14,13 @@ window.CARD_DEFS = {
  zhongchui:{n:'流星锤',type:'weapon',cnt:1,t:'武器：你的【斩】被抵消后，对方随机弃1张手牌。'},
  tengdun:{n:'藤盾',type:'armor',cnt:1,t:'防具：需要【避】时，有40%几率自动抵消。'},
  tiejia:{n:'玄铁甲',type:'armor',cnt:1,t:'防具：【烽火】【箭雨】对你无效。'},
+ huozhan:{n:'火斩',type:'basic',cnt:5,t:'计入【斩】次数，只能主动使用（不能用于响应）。对方须打出【避】，否则受到1点伤害；若对方装备【藤盾】，藤盾不生效且伤害+1。'},
+ zhangu:{n:'战鼓',type:'basic',cnt:4,t:'本回合你下一张【斩】/【火斩】命中时伤害+1。每回合限1张。'},
+ fengshou:{n:'丰收',type:'trick',cnt:2,t:'对方摸1张牌，你摸2张牌。'},
+ tanma:{n:'探马',type:'trick',cnt:3,t:'观看对方手牌，弃置其中你选的1张；没有手牌则无效。'},
+ jiezi:{n:'截辎',type:'trick',cnt:2,t:'对方下个摸牌阶段少摸1张牌。'},
+ xiuyang:{n:'休养',type:'trick',cnt:1,t:'你与对方各回复1点体力（你先）。'},
+ changqiang:{n:'长枪',type:'weapon',cnt:1,t:'武器：你的【斩】命中后，你摸1张牌。'},
+ shuangren:{n:'双刃戟',type:'weapon',cnt:1,t:'武器：你的【斩】被抵消后，你可弃2张手牌令其仍造成1点伤害。'},
+ linjia:{n:'鳞甲',type:'armor',cnt:1,t:'防具：每次受到超过1点的伤害时，减为1点。'},
 };
