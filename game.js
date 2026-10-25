@@ -429,11 +429,18 @@ function aiChoose(p,t){const h=p.hand;const f=k=>h.find(c=>c.k===k&&canPlay(p,c)
  if(p.hp<p.maxHp&&f('yao')&&h.length>handLimit(p))return f('yao');
  return null;}
 
+const OIL_IDS=new Set(['caocao','guanyu','zhouyu','lvbu','zhugeliang','diaochan','dianwei','huatuo']);
+function portraitImg(id,alt){const oil=OIL_IDS.has(id);
+ const src=oil?`assets/portraits/${id}.png`:`assets/portraits/${id}.svg`;
+ const cls=oil?' class="portrait-oil"':'';
+ const fb=oil?` onerror="this.onerror=null;this.classList.remove('portrait-oil');this.src='assets/portraits/${id}.svg'"`:'';
+ return `<img${cls} alt="${alt}" src="${src}"${fb}>`;}
+
 // ---- 渲染 ----
 function shake(p){const el=$(p.i?'#ai':'#me');el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');}
 function hpBar(p){let s='';for(let i=0;i<p.maxHp;i++)s+=`<i class="${i<p.hp?'on':''}"></i>`;return s;}
 function seat(p){const fc=FACTIONS[p.g.f];
- return `<div class="portrait f-${p.g.f}"><img src="assets/portraits/${p.g.id}.svg" alt="${p.g.name}"><span class="fac">${fc.n}</span></div>
+ return `<div class="portrait f-${p.g.f}">${portraitImg(p.g.id,p.g.name)}<span class="fac">${fc.n}</span></div>
  <div class="info"><div class="name">${p.g.name}${G.cur===p&&!G.over?' <em>行动中</em>':''}</div><div class="hp">${hpBar(p)}<span class="hpnum">体力 ${p.hp}/${p.maxHp}</span></div>
  <div class="skills">${p.g.skills.map(s=>`<span title="${s.t}">${s.n}</span>`).join('')}</div>
  <div class="equip">${['weapon','armor'].map(s=>p[s]?`<span title="${CARD_DEFS[p[s].k].t}">${s==='weapon'?'⚔':'🛡'}${cn(p[s].k)}</span>`:'').join('')}</div>
@@ -516,7 +523,7 @@ let OFFER=[],PICK=null;
 function fillSlot(g){PICK=g;const body=$('#picked-body'),btn=$('#confirm');
  if(!g){body.innerHTML='<p class="slot-empty">点击左侧武将</p>';btn.disabled=true;return;}
  const fc=FACTIONS[g.f];
- body.innerHTML=`<img alt="${g.name}" src="assets/portraits/${g.id}.svg"><p class="slot-name"><span class="fac">${fc.n}</span>${g.name}</p><p class="slot-hp">体力 ${g.hp}</p><div class="slot-skills">${g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('')}</div>`;
+ body.innerHTML=`${portraitImg(g.id,g.name)}<p class="slot-name"><span class="fac">${fc.n}</span>${g.name}</p><p class="slot-hp">体力 ${g.hp}</p><div class="slot-skills">${g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('')}</div>`;
  btn.disabled=false;}
 function confirmPick(){const g=PICK;if(!g)return;
  if(!NET){const pool=GENERALS.filter(x=>x!==g);start(g,pool[Math.random()*pool.length|0],false);return;}
@@ -526,12 +533,12 @@ function selectScreen(ids){const root=$('#select');root.classList.remove('screen
  const grid=$('#grid');grid.innerHTML='';OFFER=ids||shuffle(GENERALS.map(g=>g.id)).slice(0,8);
  for(const id of OFFER){const g=GENERALS.find(x=>x.id===id);const fc=FACTIONS[g.f];const el=document.createElement('div');el.className=`gcard f-${g.f}`;
   const title=g.skills.map(s=>`【${s.n}】${s.t}`).join('\n');
-  el.innerHTML=`<img alt="${g.name}" src="assets/portraits/${g.id}.svg"><div class="faction-bar"></div><div class="gn"><span class="fac">${fc.n}</span>${g.name}<small>体力 ${g.hp}</small></div><div class="skill-line" title="${title}">${g.skills[0].t}</div>`;
+  el.innerHTML=`${portraitImg(g.id,g.name)}<div class="faction-bar"></div><div class="gn"><span class="fac">${fc.n}</span>${g.name}<small>体力 ${g.hp}</small></div><div class="skill-line" title="${title}">${g.skills[0].t}</div>`;
   el.onclick=()=>{for(const n of grid.children)n.classList.remove('is-picked');if(PICK===g){fillSlot(null);return;}el.classList.add('is-picked');fillSlot(g);};
   grid.appendChild(el);}
  const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');$('#stats').textContent=`人机战绩 ${st.w} 胜 ${st.l} 负 · 武将池 ${GENERALS.length} 位，每局随机 8 位`;}
 function showDetail(g){const d=$('#detail');const fc=FACTIONS[g.f];
- d.innerHTML=`<img src="assets/portraits/${g.id}.svg"><h3>${fc.n}·${g.name}　♥${g.hp}</h3>${g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('')}<button id="go">选择出战</button> <button id="cl">返回</button>`;
+ d.innerHTML=`${portraitImg(g.id,g.name)}<h3>${fc.n}·${g.name}　♥${g.hp}</h3>${g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('')}<button id="go">选择出战</button> <button id="cl">返回</button>`;
  d.classList.remove('hide');$('#cl').onclick=()=>d.classList.add('hide');
  $('#go').onclick=()=>{d.classList.add('hide');
   if(!NET){const pool=GENERALS.filter(x=>x!==g);start(g,pool[Math.random()*pool.length|0],false);return;}
