@@ -14,7 +14,7 @@
 - 对战手牌是暖纸色，字是墨色，方便在深桌上阅读。武将卡保持深色，手牌保持浅色。这是两种组件，不是同一张卡的两种状态。
 - 势力色条是平涂，不是渐变：魏蓝、蜀绿、吴红。群是上下各 4px 的平涂金带和暗紫带，用 `box-shadow: inset 0 -4px 0` 做成色带，不用 `linear-gradient`。
 - 全页禁止紫蓝渐变、玻璃拟态、模糊投影、装饰光斑。群势力那条 4px 暗紫只出现在群卡的色条上，不进入背景、按钮或标题。
-- 像素立绘继续 `image-rendering: pixelated`，`object-fit: cover`，`object-position: center`。
+- 像素立绘继续 `image-rendering: pixelated`，`object-fit: cover`，`object-position: center`。`caocao`、`guanyu`、`zhouyu`、`lvbu`、`zhugeliang`、`diaochan`、`dianwei`、`huatuo` 的 `img` 带 `portrait-illust`，`image-rendering` 为 `auto`。其余立绘仍是 `pixelated`。
 
 ### 已知并接受的差异
 
@@ -244,7 +244,7 @@ repeating-linear-gradient(
 
 ```html
 <div class="gcard f-wei">
-  <img alt="曹操" src="assets/portraits/caocao.svg">
+  <img alt="曹操" class="portrait-illust" src="assets/portraits/caocao.png">
   <div class="faction-bar"></div>
   <div class="gn"><span class="fac">魏</span>曹操<small>体力 4</small></div>
   <div class="skill-line">第一张技能的 t 全文</div>

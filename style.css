@@ -170,6 +170,10 @@ button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 .portrait.f-wu{background:var(--wu)}
 .portrait.f-qun{background:var(--qun-gold)}
 .portrait img{width:100%; display:block; object-fit:cover; object-position:center; image-rendering:pixelated}
+.gcard img.portrait-illust,
+#picked img.portrait-illust,
+.portrait img.portrait-illust,
+.modal img.portrait-illust{image-rendering:auto}
 .portrait .fac{position:absolute; top:4px; left:4px}
 .info{flex:1; min-width:0; font-size:14px}
 .name{font-size:16px; font-weight:700; line-height:1.2}
