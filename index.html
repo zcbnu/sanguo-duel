@@ -7,51 +7,82 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="select" class="screen-lobby">
-  <header class="mast">
-    <h1>三国对决</h1>
-    <p class="sub">1v1 卡牌对战 · 人机 / 联机 · 选择你的武将</p>
-    <div id="modes">
-      <button id="pve" class="btn-primary" type="button">人机对战（换一批武将）</button>
-      <button id="host" class="btn-primary" type="button">创建联机房间</button>
+<div id="app">
+  <div id="select" class="screen-lobby">
+    <header class="mast">
+      <button id="back" type="button">返回</button>
+      <h1>三国对决</h1>
+      <p class="sub">1v1 卡牌对战 · 人机 / 联机 · 选择你的武将</p>
+      <h2 id="selectTitle">选择武将</h2>
+      <div id="modes">
+        <button id="pve" class="btn-primary" type="button">人机对战（换一批武将）</button>
+        <button id="host" class="btn-primary" type="button">创建联机房间</button>
+      </div>
+      <div id="lobby"></div>
+      <div class="lobby-tools">
+        <button id="rules" type="button">规则</button>
+        <button id="statsOpen" type="button">战绩</button>
+      </div>
+    </header>
+    <div class="select-layout">
+      <div id="grid"></div>
+      <aside id="picked">
+        <button id="detailOpen" type="button" disabled>详情</button>
+        <div id="picked-body" aria-live="polite"><p class="slot-empty">点选一名武将</p></div>
+        <button id="confirm" class="btn-primary" type="button" disabled>出战</button>
+      </aside>
     </div>
-    <div id="lobby"></div>
+  </div>
+  <div id="battle" class="hide">
+    <section class="enemy-bar">
+      <div id="ai" class="seat"></div>
+      <div id="aihand" class="minis" hidden aria-hidden="true"></div>
+    </section>
+    <section id="table">
+      <div class="zones">
+        <div id="deckinfo"></div>
+        <div id="discardinfo"></div>
+      </div>
+      <div class="status-row">
+        <div id="logSheet">
+          <div id="log" aria-hidden="true"></div>
+          <button id="logOpen" type="button" aria-label="完整日志"></button>
+        </div>
+        <button id="exit" type="button">退出</button>
+      </div>
+    </section>
+    <section class="self-bar">
+      <div id="me" class="seat"></div>
+    </section>
+    <section class="hand-row">
+      <div id="hand"></div>
+      <div id="actions"></div>
+    </section>
+  </div>
+  <div id="over" class="modal hide"></div>
+  <div id="prompt" class="modal hide"></div>
+  <button id="scrim" type="button" class="hide" aria-label="关闭"></button>
+  <div id="ruleSheet" class="sheet hide">
+    <button id="ruleClose" class="btn-on-paper" type="button">关闭</button>
+    <div id="ruleBox"></div>
+  </div>
+  <div id="statsSheet" class="sheet hide">
+    <button id="statsClose" class="btn-on-paper" type="button">关闭</button>
     <div id="stats"></div>
-    <button id="rules" type="button">规则</button>
-    <div id="ruleBox" class="hide"></div>
-  </header>
-  <div class="select-layout">
-    <div id="grid"></div>
-    <aside id="picked">
-      <h2>出战</h2>
-      <div id="picked-body" aria-live="polite"><p class="slot-empty">点击左侧武将</p></div>
-      <button id="confirm" class="btn-primary" type="button" disabled>选择出战</button>
-    </aside>
+  </div>
+  <div id="detail" class="modal sheet hide"></div>
+  <div id="skillSheet" class="sheet hide">
+    <button id="skillClose" class="btn-on-paper" type="button">关闭</button>
+    <div id="skillBody"></div>
+  </div>
+  <div id="exitConfirm" class="hide">
+    <p>离开这局？未结束的对局会直接断开。</p>
+    <div class="exit-actions">
+      <button id="exitStay" type="button">继续</button>
+      <button id="exitLeave" class="btn-primary" type="button">离开</button>
+    </div>
   </div>
 </div>
-<div id="detail" class="modal hide"></div>
-<div id="battle" class="hide">
-  <section class="enemy-bar">
-    <div id="ai" class="seat"></div>
-    <div id="aihand" class="minis"></div>
-  </section>
-  <section id="table">
-    <div class="zones">
-      <div id="deckinfo"></div>
-      <div id="discardinfo"></div>
-    </div>
-    <div id="log"></div>
-  </section>
-  <section class="self-bar">
-    <div id="me" class="seat"></div>
-  </section>
-  <section class="hand-row">
-    <div id="hand"></div>
-    <div id="actions"></div>
-  </section>
-</div>
-<div id="prompt" class="modal hide"></div>
-<div id="over" class="modal hide"></div>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="data/generals.js"></script>
 <script src="data/cards.js"></script>
