@@ -224,10 +224,17 @@ button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   border-radius:4px; padding:0 5px; margin:2px var(--s-1) 0 0;
 }
 .equip span{background:var(--equip)}
+.skills span.gained{background:var(--vermillion); color:#fff8ee}
+.skills span.mark{
+  background:var(--ink); color:var(--gold);
+  border:1px solid var(--gold-line);
+  font-size:12px; line-height:14px;
+}
 .cnt{color:var(--gold); font-size:16px}
 #me .cnt{display:none}
 .minis{display:flex; flex-wrap:nowrap; gap:2px}
 #table{
+  position:relative;
   background:transparent; border:none; border-radius:0; box-shadow:none;
   padding:0; display:flex; flex-direction:column; gap:4px; min-height:0;
 }
@@ -296,7 +303,7 @@ button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   -webkit-overflow-scrolling:touch; touch-action:pan-x; overscroll-behavior-x:contain;
 }
 #actions{display:flex; flex-direction:row; align-items:stretch; gap:var(--s-2); min-height:48px}
-#actions button{flex:1; min-width:0; min-height:48px; width:auto}
+#actions button{flex:1; min-width:0; min-height:48px; width:auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 #actions .wait{display:flex; align-items:center; min-height:48px; color:var(--text-muted)}
 .card{
   width:120px; height:168px; flex:none; box-sizing:border-box;
@@ -436,3 +443,60 @@ button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 @keyframes fl{to{transform:translateY(-30px);opacity:0}}
 .shake{animation:sh .3s}
 @keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+/* 中区特效。光点只在出牌轨迹里，播完就从页面拿走。 */
+#fxLayer{
+  position:absolute; inset:0; z-index:4; overflow:visible; pointer-events:none;
+}
+#fxLayer *{pointer-events:none}
+#fxLayer .float{right:12px}
+#fxLayer .float.to-ai{top:0; bottom:auto}
+#fxLayer .float.to-me{top:auto; bottom:0}
+.fx-card{
+  position:absolute; left:50%; top:50%; width:72px; height:96px; margin:-48px 0 0 -36px;
+  box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:var(--paper); color:var(--paper-ink);
+  border:2px solid var(--paper-ink); border-radius:8px;
+  pointer-events:none; animation:fx-card-in var(--fx-dur,0.9s) linear forwards;
+}
+.fx-card b{font-size:28px; line-height:1; font-weight:700; text-shadow:2px 2px 0 #14110e}
+.fx-card .suit{font-style:normal; font-size:12px; color:var(--paper-ink); margin-top:4px}
+.fx-card .suit.red{color:var(--zhan)}
+.fx-card.paper-trick{background:var(--trick)}
+.fx-card.paper-equip{background:var(--equip)}
+.fx-card.fx-back{background:repeating-linear-gradient(45deg,var(--vermillion) 0 4px,#8e2a22 4px 8px)}
+.fx-card.name-zhan b{color:var(--zhan)}
+.fx-card.name-bi b{color:var(--bi)}
+.fx-card.name-yao b{color:var(--yao)}
+.fx-card.name-ink b{color:var(--paper-ink)}
+.track-zhan{--fx-dur:0.9s; --pip:var(--float-bad)}
+.track-drum{--fx-dur:0.8s; --pip:var(--gold)}
+.track-bi{--fx-dur:0.7s; --pip:var(--gold)}
+.track-yao{--fx-dur:1.0s; --pip:var(--float-good)}
+.track-trick{--fx-dur:1.2s; --pip:var(--gold-line)}
+.track-equip{--fx-dur:0.8s; --pip:var(--equip)}
+.fx-pip{
+  position:absolute; left:33px; top:45px; width:6px; height:6px; border-radius:50%;
+  background:var(--pip); pointer-events:none;
+  animation-name:var(--pip-anim); animation-duration:var(--fx-dur,0.9s);
+  animation-timing-function:linear; animation-fill-mode:forwards;
+}
+.fx-skill{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  font-size:20px; font-weight:700; color:var(--gold); white-space:nowrap;
+  text-shadow:2px 2px 0 #14110e; pointer-events:none;
+  animation:fx-skill 0.8s linear forwards;
+}
+@keyframes fx-card-in{
+  0%{opacity:0; transform:scale(0.92)}
+  12%{opacity:1; transform:scale(1)}
+  80%{opacity:1; transform:scale(1)}
+  100%{opacity:0; transform:scale(1)}
+}
+@keyframes fx-pip-zhan-up{to{transform:translate(var(--dx,0px),-36px); opacity:0}}
+@keyframes fx-pip-zhan-down{to{transform:translate(var(--dx,0px),36px); opacity:0}}
+@keyframes fx-pip-bi-left{to{transform:translateX(-40px); opacity:0}}
+@keyframes fx-pip-bi-right{to{transform:translateX(40px); opacity:0}}
+@keyframes fx-pip-yao{to{transform:translateY(-28px); opacity:0}}
+@keyframes fx-pip-trick{to{transform:translate(var(--tx,0px),var(--ty,0px)); opacity:0}}
+@keyframes fx-pip-equip{to{transform:translateY(24px); opacity:0}}
+@keyframes fx-skill{to{transform:translate(-50%,calc(-50% - 12px)); opacity:0}}

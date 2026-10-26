@@ -14,7 +14,8 @@ const isRed=c=>c.s==='heart'||c.s==='diamond';
 const skillsOf=p=>p.g.skills.concat(p.gained||[]);
 const has=(p,k)=>skillsOf(p).some(s=>s.k===k);
 const sk=(p,k)=>(skillsOf(p).find(s=>s.k===k)||{}).n;
-function log(t){if(window.HARNESS){(window.LOGS=window.LOGS||[]).push(t);if(LOGS.length>(window.LOGMAX||30))LOGS.shift();return;}if(NET&&NET.role==='host')send({type:'log',t});const el=$('#log');const d=document.createElement('div');d.textContent=t;el.prepend(d);}
+function log(t){if(window.HARNESS){(window.LOGS=window.LOGS||[]).push(t);if(LOGS.length>(window.LOGMAX||30))LOGS.shift();return;}if(NET&&NET.role==='host')send({type:'log',t});const el=$('#log');const d=document.createElement('div');d.textContent=t;el.prepend(d);if(NET&&NET.role==='guest')return;const name=fxSkillName(t);if(!name)return;paintSkill(name);if(NET&&NET.role==='host')send({type:'fx',kind:'skill',name});}
+function fxSkillName(t){const a=/发动【([^】]*)】/.exec(t);if(a)return a[1];const b=/觉醒【([^】]*)】/.exec(t);return b?b[1]:'';}
 function opp(p){return G.P[1-p.i];}
 function topCard(){if(!G.deck.length){G.deck=shuffle(G.discard);G.discard=[];}return G.deck.pop();}
 function drawCards(p,n){for(let i=0;i<n;i++){const c=topCard();if(!c)break;p.hand.push(c);}render();}
@@ -22,7 +23,16 @@ function afterLose(p){if(has(p,'lianying')&&!p.hand.length&&!p.lyBusy){p.lyBusy=
 function removeCard(p,c){p.hand=p.hand.filter(x=>x!==c);G.discard.push(c);afterLose(p);}
 function randDiscard(p,why){if(!p.hand.length)return;const c=p.hand[Math.random()*p.hand.length|0];removeCard(p,c);log(`${p.g.name}${why||''}弃置了${cname(c)}`);}
 function handLimit(p){return Math.max(0,p.hp)+(has(p,'yinren')?2:0)+(has(p,'jiancheng')?2:0)+(has(p,'songwei')?1:0)+(has(p,'xueyi')?2:0)+(has(p,'tunken')?Math.min(2,p.tian||0):0)+(p.quan||0)-(p.wzMinus||0);}
-function float(p,txt,cls){if(NET&&NET.role==='host')send({type:'fx',w:p.remote?0:1,txt,cls});const el=$(p.i?'#ai':'#me');const f=document.createElement('div');f.className='float '+cls;f.textContent=txt;el.appendChild(f);setTimeout(()=>f.remove(),900);}
+// 特效都挂在 #fxLayer。座位重绘不碰这一层。超过 12 个子节点时先去掉最旧的一个。
+function fxTrim(layer){if(layer.childNodes.length>12)layer.removeChild(layer.firstChild);}
+function fxHold(layer,node,ms){setTimeout(()=>{if(node.parentNode===layer)node.remove();},ms);}
+function clearFx(){const layer=$('#fxLayer');if(!layer)return;while(layer.firstChild)layer.removeChild(layer.firstChild);}
+function paintFloat(p,txt,cls){if(window.HARNESS||!p)return;const layer=$('#fxLayer');if(!layer)return;fxTrim(layer);const n=layer.querySelectorAll('.float').length;const f=document.createElement('div');f.className='float '+cls+' '+(p.i===0?'to-me':'to-ai');f.textContent=txt;if(f.style)f.style.right=(12+n*36)+'px';layer.appendChild(f);fxHold(layer,f,900);}
+function float(p,txt,cls){if(window.HARNESS)return;if(NET&&NET.role==='host')send({type:'fx',kind:'float',w:p.remote?0:1,txt,cls});paintFloat(p,txt,cls);}
+function fxTrack(key){const D=CARD_DEFS[key];if(!D)return null;if(key==='zhangu')return {cls:'track-zhan track-drum',ms:800,pip:'zhan'};if(key==='zhan'||key==='huozhan')return {cls:'track-zhan',ms:900,pip:'zhan'};if(key==='bi')return {cls:'track-bi',ms:700,pip:'bi'};if(key==='yao')return {cls:'track-yao',ms:1000,pip:'yao'};if(D.type==='trick')return {cls:'track-trick',ms:1200,pip:'trick'};if(D.type==='weapon'||D.type==='armor')return {cls:'track-equip',ms:800,pip:'equip'};return null;}
+function paintFxCard(p,key,suit,red,faceDown){if(window.HARNESS||!p)return;const layer=$('#fxLayer'),D=CARD_DEFS[key],tr=D&&fxTrack(key);if(!layer||!tr)return;if(faceDown){suit='';red=false;}fxTrim(layer);const el=document.createElement('div');const paper=D.type==='trick'?' paper-trick':(D.type==='weapon'||D.type==='armor')?' paper-equip':'';const name=key==='zhan'||key==='huozhan'?'name-zhan':key==='bi'?'name-bi':key==='yao'?'name-yao':'name-ink';el.className='fx-card '+tr.cls+paper+' '+name+(faceDown?' fx-back':'');const b=document.createElement('b');b.textContent=D.n;el.appendChild(b);if(suit){const i=document.createElement('i');i.className='suit'+(red?' red':'');i.textContent=suit;el.appendChild(i);}for(let n=0;n<8;n++){const s=document.createElement('span');s.className='fx-pip';const anim=tr.pip==='zhan'?(p.i===0?'fx-pip-zhan-up':'fx-pip-zhan-down'):tr.pip==='bi'?(n<4?'fx-pip-bi-left':'fx-pip-bi-right'):tr.pip==='yao'?'fx-pip-yao':tr.pip==='trick'?'fx-pip-trick':'fx-pip-equip';if(s.style&&s.style.setProperty){s.style.setProperty('--pip-anim',anim);if(tr.pip==='zhan')s.style.setProperty('--dx',((n-3.5)*8)+'px');if(tr.pip==='trick'){const rad=n*Math.PI/4;s.style.setProperty('--tx',(Math.cos(rad)*32)+'px');s.style.setProperty('--ty',(Math.sin(rad)*32)+'px');}}el.appendChild(s);}layer.appendChild(el);fxHold(layer,el,tr.ms);}
+function fxCard(p,card,key,faceDown){if(window.HARNESS)return;if(!$('#fxLayer'))return;const down=!!faceDown;let suit='',red=false;if(card&&!down){suit=cs(card);red=isRed(card);}paintFxCard(p,key,suit,red,down);if(NET&&NET.role==='host')send({type:'fx',kind:'card',w:p.remote?0:1,key,suit:down?'':suit,red:!!(down?false:red),faceDown:down});}
+function paintSkill(name){if(window.HARNESS||!name)return;const layer=$('#fxLayer');if(!layer)return;fxTrim(layer);const el=document.createElement('div');el.className='fx-skill';el.textContent='【'+name+'】';layer.appendChild(el);fxHold(layer,el,800);}
 function loseEquip(p,slot,to){const e=p[slot];p[slot]=null;if(to){if(to[slot])G.discard.push(to[slot]);to[slot]=e;}else G.discard.push(e);
  if(has(p,'xiaoji')){log(`${p.g.name}发动【${sk(p,'xiaoji')}】`);drawCards(p,2);}if(has(p,'xuanfeng')&&opp(p).hand.length){log(`${p.g.name}【${sk(p,'xuanfeng')}】`);randDiscard(opp(p));}render();return e;}
 const canTakeEquip=t=>!has(t,'qicai')&&(t.weapon||t.armor);
@@ -30,7 +40,7 @@ const canTakeEquip=t=>!has(t,'qicai')&&(t.weapon||t.armor);
 // ---- 人类交互 ----
 let pending=null;
 // 出牌选中不写入 G.sel。壳层开关只影响本地看见的抽屉。
-let playSel=null,playCommit=false,promptOpen=false,logExpanded=false,exitOpen=false,sheetOpener=null;
+let playSel=null,playCommit=false,promptOpen=false,logExpanded=false,exitOpen=false,sheetOpener=null,skillWho=null;
 function waitUser(){return new Promise(r=>pending=r);}
 function resolveUser(v){if(NET&&NET.role==='guest'){guestAct(v);return;}if(pending){const r=pending;pending=null;r(v);}}
 async function ask(p,msg,opts){ // opts:[{label,val}]
@@ -69,7 +79,7 @@ async function respond(p,k,msg){
  const list=asCards(p,k);if(!list.length)return false;
  const VALr=c=>c.k===k?1:0;const c=[...list].sort((a,b)=>VALr(b)-VALr(a))[0];
  let use=true;if(!p.ai)use=await ask(p,msg+`（可用${list.length}张）`,[{label:'打出'+cname(c)+(c.k!==k?`当【${cn(k)}】`:''),val:true},{label:'不出',val:false}]);
- if(!use)return false;removeCard(p,c);log(`${p.g.name}打出${cname(c)}${c.k!==k?`当【${cn(k)}】`:''}`);render();await sleep(350);
+ if(!use)return false;removeCard(p,c);log(`${p.g.name}打出${cname(c)}${c.k!==k?`当【${cn(k)}】`:''}`);fxCard(p,c,k,false);render();await sleep(350);
  if(k==='bi')await onDodge(p);
  if(k==='bi'&&has(p,'leiji')&&!G.over){const t=opp(p);if(await yesno(p,`发动【${sk(p,'leiji')}】令对方判定？`,true)){log(`${p.g.name}发动【${sk(p,'leiji')}】`);const j=await judge(t,sk(p,'leiji'),x=>x.s!=='spade');if(j.s==='spade')await damage(p,t,2,'雷击');}}
  return true;}
@@ -105,14 +115,14 @@ async function dying(p){
   const c=p.hand.find(x=>x.k==='yao')||(has(p,'jijiu')&&p.hand.find(x=>isRed(x)));
   if(!c)break;
   let use=true;if(!p.ai)use=await ask(p,`你濒死！使用${cname(c)}${c.k!=='yao'?'当【药】':''}救自己吗？`,[{label:'使用',val:true},{label:'放弃',val:false}]);
-  if(!use)break;removeCard(p,c);log(`${p.g.name}濒死使用${cname(c)}`);await heal(p,1);}
+  if(!use)break;removeCard(p,c);log(`${p.g.name}濒死使用${cname(c)}`);fxCard(p,c,'yao',false);await heal(p,1);}
  if(p.hp<=0&&has(p,'niepan')&&!p.niepanUsed&&await yesno(p,`发动【${sk(p,'niepan')}】？`,true)){p.niepanUsed=true;log(`${p.g.name}发动【${sk(p,'niepan')}】`);
   [...p.hand].forEach(c=>{p.hand=p.hand.filter(x=>x!==c);G.discard.push(c);});['weapon','armor'].forEach(s=>{if(p[s]){G.discard.push(p[s]);p[s]=null;}});p.hp=Math.min(2,p.maxHp);drawCards(p,2);}
  if(p.hp<=0&&has(p,'buqu')){p.buqu=p.buqu||[];const c=topCard();if(c){const dup=p.buqu.some(x=>x.r===c.r)||p.buqu.length>=4;p.buqu.push(c);log(`${p.g.name}【${sk(p,'buqu')}】亮出${cname(c)}${dup?'，点数重复！':'，存活'}`);if(!dup)p.hp=1;}}
  if(p.hp<=0&&!G.over)endGame(opp(p));}
 function endGame(w){G.over=true;render();if(NET){send({type:'over',win:w.i===1,name:w.g.name});}const me=w.i===0;const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');if(!AUTO){me?st.w++:st.l++;localStorage.sgStats=JSON.stringify(st);}
  if(window.onGameOver)window.onGameOver(w);
- promptOpen=false;$('#prompt').classList.add('hide');closeSheets();
+ promptOpen=false;$('#prompt').classList.add('hide');closeSheets();clearFx();
  $('#over').innerHTML=`<h2>${me?'胜利！':'败北…'}</h2><p>${w.g.name} 获胜</p><p>战绩：${st.w} 胜 ${st.l} 负</p><button class="btn-primary" type="button" onclick="location.reload()">再来一局</button>`;$('#over').classList.remove('hide');resolveUser(null);}
 
 // ---- 出牌 ----
@@ -128,7 +138,7 @@ function canZhan(p){return !p.noZhan&&p.zhanUsed<zhanLimit(p);}
 function zhanLimit(p){if(p.weapon&&p.weapon.k==='liannu')return 99;return (has(p,'baohe')?2:1)+(p.extraZhan||0);}
 const BLACK_IMMUNE=(t,c)=>has(t,'weimu')&&c&&!isRed(c)&&CARD_DEFS[c.k].type==='trick';
 async function playCard(p,c,as){if(G.over)return;const t=opp(p);removeCard(p,c);const k=as||c.k,D=CARD_DEFS[k];
- log(`${p.g.name}使用${cname(c)}${as?`当【${D.n}】`:''}`);render();await sleep(300);p.usedCnt=(p.usedCnt||0)+1;if(D.type==='trick')p.trickUsed=true;
+ log(`${p.g.name}使用${cname(c)}${as?`当【${D.n}】`:''}`);fxCard(p,c,k,false);render();await sleep(300);p.usedCnt=(p.usedCnt||0)+1;if(D.type==='trick')p.trickUsed=true;
  if(has(p,'jiang')&&((k==='zhan'&&isRed(c))||k==='dantiao')){log(`${p.g.name}【${sk(p,'jiang')}】摸1张`);drawCards(p,1);}
  if(D.type==='weapon'||D.type==='armor'){const slot=D.type;if(p[slot])G.discard.push(p[slot]);G.discard=G.discard.filter(x=>x!==c);p[slot]=c;if(has(p,'xiaoji')){log(`${p.g.name}发动【${sk(p,'xiaoji')}】`);drawCards(p,2);}render();return;}
  if(D.type==='trick'&&has(p,'jizhi')){log(`${p.g.name}发动【${sk(p,'jizhi')}】`);drawCards(p,1);}
@@ -188,7 +198,7 @@ const ACTIVES={
   if(w){log(`${p.g.name}弃置了武器`);G.discard.push(p.weapon);p.weapon=null;render();}else await loseHp(p,1);if(G.over)return;
   const t=opp(p);if(!await respond(t,'bi',`【恶战】打出【避】？`)){await damage(p,t,1,sk(p,'ezhan'));if(!G.over)drawCards(p,1);}}},
  quce:{can:p=>p.hand.length>=1,need:1,async run(p,cards){const r=await pindian(p,opp(p),cards[0]);if(r.win){const c=r.cards[1]||r.cards.find(x=>x!==cards[0]);if(c){G.discard=G.discard.filter(x=>x!==c);p.hand.push(c);}log(`${p.g.name}获得对方的拼点牌`);}else randDiscard(p);render();}},
- duanliang:{times:2,can:p=>p.hand.some(ACT_F.duanliang),need:1,filter:c=>ACT_F.duanliang(c),async run(p,cards){removeCard(p,cards[0]);log(`${p.g.name}将${cname(cards[0])}当【破阵】`);const t=opp(p);if(await pozhen(p,t)){t.drawMinus=(t.drawMinus||0)+1;log(`${t.g.name}下回合少摸1张`);}}},
+ duanliang:{times:2,can:p=>p.hand.some(ACT_F.duanliang),need:1,filter:c=>ACT_F.duanliang(c),async run(p,cards){removeCard(p,cards[0]);log(`${p.g.name}将${cname(cards[0])}当【破阵】`);fxCard(p,cards[0],'pozhen',false);const t=opp(p);if(await pozhen(p,t)){t.drawMinus=(t.drawMinus||0)+1;log(`${t.g.name}下回合少摸1张`);}}},
  renwang:{can:p=>p.hand.length>=2,need:2,async run(p,cards){cards.forEach(c=>removeCard(p,c));const h=p.hp<p.maxHp&&await yesno(p,'回复1点体力？（否则摸3张）',p.hp<=2);if(h)await heal(p,1);else drawCards(p,3);}},
  chifeng:{times:99,can:p=>canZhan(p)&&p.hand.some(ACT_F.chifeng),need:1,filter:c=>ACT_F.chifeng(c),async run(p,cards){await playCard(p,cards[0],'zhan');},silent:true},
  longdan:{times:99,can:p=>canZhan(p)&&p.hand.some(c=>c.k==='bi'),need:1,filter:c=>c.k==='bi',async run(p,cards){await playCard(p,cards[0],'zhan');},silent:true},
@@ -204,7 +214,7 @@ const ACTIVES={
   const g=await choose(t,`【反间】猜${p.g.name}扣置的这张牌是什么颜色？`,[{label:'红色',val:'red'},{label:'黑色',val:'black'}],Math.random()<.5?'red':'black');
   p.hand=p.hand.filter(x=>x!==c);const real=isRed(c)?'red':'black';const right=real===g;if(right)t.hand.push(c);else G.discard.push(c);afterLose(p);log(`${t.g.name}猜${g==='red'?'红色':'黑色'}，${right?'猜对，获得':'猜错，弃置'}${cname(c)}`);
   if(!right)await damage(p,t,1,sk(p,'fanjian'));render();}},
- qixi:{times:99,can:p=>p.hand.some(c=>!isRed(c)),need:1,filter:c=>!isRed(c),async run(p,cards){removeCard(p,cards[0]);log(`${p.g.name}将${cname(cards[0])}当【破阵】`);await pozhen(p,opp(p));if(has(p,'jieying')&&p.jieyingT!==G.turnNo){p.jieyingT=G.turnNo;log(`${p.g.name}【${sk(p,'jieying')}】摸1张牌`);drawCards(p,1);}}},
+ qixi:{times:99,can:p=>p.hand.some(c=>!isRed(c)),need:1,filter:c=>!isRed(c),async run(p,cards){removeCard(p,cards[0]);log(`${p.g.name}将${cname(cards[0])}当【破阵】`);fxCard(p,cards[0],'pozhen',false);await pozhen(p,opp(p));if(has(p,'jieying')&&p.jieyingT!==G.turnNo){p.jieyingT=G.turnNo;log(`${p.g.name}【${sk(p,'jieying')}】摸1张牌`);drawCards(p,1);}}},
  jieyin:{can:p=>p.hand.length>=2&&p.hp<p.maxHp,need:2,async run(p,cards){cards.forEach(c=>removeCard(p,c));await heal(p,1);drawCards(p,1);}},
  dimeng:{can:p=>p.hand.length>=1,need:1,async run(p,cards){removeCard(p,cards[0]);const t=opp(p);[p.hand,t.hand]=[t.hand,p.hand];log(`${p.g.name}与${t.g.name}交换了手牌`);afterLose(p);afterLose(t);render();}},
  gongxin:{can:p=>opp(p).hand.length>0,need:0,async run(p){const t=opp(p);const best=[...t.hand].sort((a,b)=>VAL[b.k]-VAL[a.k])[0];const c=await pickCard(p,`${t.g.name}的手牌，选一张弃置`,t.hand,best);removeCard(t,c);log(`${t.g.name}被弃置了${cname(c)}`);render();}},
@@ -212,9 +222,9 @@ const ACTIVES={
  kurou:{times:2,can:p=>p.hp>1,need:0,async run(p){await loseHp(p,1);drawCards(p,2);if(has(p,'zhaxiang')&&!p.zhaxiangOn){p.zhaxiangOn=true;p.extraZhan=(p.extraZhan||0)+1;log(`${p.g.name}【${sk(p,'zhaxiang')}】：多出一张斩`);}}},
  guose:{can:p=>p.hand.some(c=>c.s==='diamond')&&!opp(p).guose,need:1,filter:c=>c.s==='diamond',async run(p,cards){removeCard(p,cards[0]);opp(p).guose=true;log(`${opp(p).g.name}下回合需判定【国色】`);}},
  qingnang:{can:p=>p.hand.length>=1&&p.hp<p.maxHp,need:1,async run(p,cards){removeCard(p,cards[0]);await heal(p,1);}},
- lihun:{can:p=>p.hand.length>=1,need:1,async run(p,cards){removeCard(p,cards[0]);const t=opp(p);if(has(t,'qianxun')){log('【谦逊】：无效');return;}await duel(p,t);}},
- luanji:{times:2,can:p=>p.hand.filter(isRed).length>=2||p.hand.filter(x=>!isRed(x)).length>=2,need:2,valid:cs=>isRed(cs[0])===isRed(cs[1]),async run(p,cards){cards.forEach(c=>removeCard(p,c));log(`${p.g.name}将两张牌当【箭雨】`);const t=opp(p),h=t.hp;await aoe(p,t,'jianyu');if(!G.over&&t.hp<h){log(`${p.g.name}【乱击】命中，摸2张牌`);drawCards(p,2);}}},
- yandou:{can:p=>p.hand.some(c=>c.k==='zhan'),need:1,filter:c=>c.k==='zhan',async run(p,cards){removeCard(p,cards[0]);const t=opp(p);if(has(t,'qianxun')){log('【谦逊】：无效');return;}await duel(p,t);}},
+ lihun:{can:p=>p.hand.length>=1,need:1,async run(p,cards){removeCard(p,cards[0]);const t=opp(p);if(has(t,'qianxun')){log('【谦逊】：无效');return;}fxCard(p,cards[0],'dantiao',false);await duel(p,t);}},
+ luanji:{times:2,can:p=>p.hand.filter(isRed).length>=2||p.hand.filter(x=>!isRed(x)).length>=2,need:2,valid:cs=>isRed(cs[0])===isRed(cs[1]),async run(p,cards){cards.forEach(c=>removeCard(p,c));log(`${p.g.name}将两张牌当【箭雨】`);fxCard(p,cards[0],'jianyu',false);const t=opp(p),h=t.hp;await aoe(p,t,'jianyu');if(!G.over&&t.hp<h){log(`${p.g.name}【乱击】命中，摸2张牌`);drawCards(p,2);}}},
+ yandou:{can:p=>p.hand.some(c=>c.k==='zhan'),need:1,filter:c=>c.k==='zhan',async run(p,cards){removeCard(p,cards[0]);const t=opp(p);if(has(t,'qianxun')){log('【谦逊】：无效');return;}fxCard(p,cards[0],'dantiao',false);await duel(p,t);}},
  xionglie:{limited:true,can:p=>true,need:0,async run(p){drawCards(p,3);drawCards(opp(p),3);await heal(p,1);p.extraZhan=(p.extraZhan||0)+1;}},
 };
 const ACT_F={duanliang:c=>c.k==='yao'||['weapon','armor'].includes(CARD_DEFS[c.k].type),chifeng:c=>isRed(c)&&c.k!=='yao'&&c.k!=='zhan'};
@@ -280,7 +290,7 @@ async function drawHooks(p,t,n){
  if(has(p,'zishou')&&await yesno(p,`发动【${sk(p,'zishou')}】多摸${p.maxHp-p.hp+1}张，本回合不能出斩？`,!p.hand.some(c=>c.k==='zhan')||p.hp<=2)){n+=p.maxHp-p.hp+1;p.noZhan=true;log(`${p.g.name}发动【${sk(p,'zishou')}】`);}
  if(has(p,'xiaorui')&&n>0&&await yesno(p,`发动【${sk(p,'xiaorui')}】少摸1张，本回合多出一张斩？`,p.hand.filter(c=>c.k==='zhan').length>=2)){n--;p.extraZhan=(p.extraZhan||0)+1;log(`${p.g.name}发动【${sk(p,'xiaorui')}】`);}
  if(has(p,'lirang')&&n>0&&p.hp<p.maxHp&&await yesno(p,`发动【${sk(p,'lirang')}】少摸1张、对方摸1张，你回复1点？`,p.hp<=2)){n--;log(`${p.g.name}发动【${sk(p,'lirang')}】`);drawCards(t,1);await heal(p,1);}
- if(has(p,'jixi')&&n>0&&await yesno(p,`发动【${sk(p,'jixi')}】只摸1张，视为对对方使用【斩】？`,t.hp>1&&!asCards(t,'bi').length?true:Math.random()<.5)){n=1;log(`${p.g.name}发动【${sk(p,'jixi')}】`);await doZhan(p,t,null);}
+ if(has(p,'jixi')&&n>0&&await yesno(p,`发动【${sk(p,'jixi')}】只摸1张，视为对对方使用【斩】？`,t.hp>1&&!asCards(t,'bi').length?true:Math.random()<.5)){n=1;log(`${p.g.name}发动【${sk(p,'jixi')}】`);fxCard(p,null,'zhan',false);await doZhan(p,t,null);}
  return n;}
 async function turnEnd(p,t){
  if(has(p,'luoying')&&p.trickUsed){log(`${p.g.name}【${sk(p,'luoying')}】`);drawCards(p,1);}
@@ -298,7 +308,7 @@ const NEW_ACTIVES={
  qice:{can:p=>p.hand.length>=2,need:0,async run(p){const n=p.hand.length;[...p.hand].forEach(c=>{p.hand=p.hand.filter(x=>x!==c);G.discard.push(c);});afterLose(p);log(`${p.g.name}弃置${n}张牌视为使用【箭雨】`);await aoe(p,opp(p),'jianyu');if(!G.over&&n>=3)drawCards(p,Math.floor(n/3));}},
  junfa:{can:p=>p.hand.length>=1,needAny:true,need:1,async run(p,cs){const x=cs.length,t=opp(p);cs.forEach(c=>removeCard(p,c));
   const d=t.hand.length>=x&&await yesno(t,`【峻法】弃置${x}张手牌？（否则跳过下个出牌阶段）`,t.hand.length>=x+2||x<=1);if(d){for(let i=0;i<x;i++)randDiscard(t,'因【峻法】');}else{t.skipPlay=true;log(`${t.g.name}将跳过下个出牌阶段`);}}},
- fupo:{times:99,can:p=>canZhan(p)&&p.hand.length>=2,need:2,silent:true,async run(p,cs){cs.forEach(c=>removeCard(p,c));p.zhanUsed++;p.usedCnt=(p.usedCnt||0)+1;log(`${p.g.name}【${sk(p,'fupo')}】将两张牌当【斩】`);p.fupoOn=true;await doZhan(p,opp(p),cs[0]);p.fupoOn=false;}},
+ fupo:{times:99,can:p=>canZhan(p)&&p.hand.length>=2,need:2,silent:true,async run(p,cs){cs.forEach(c=>removeCard(p,c));p.zhanUsed++;p.usedCnt=(p.usedCnt||0)+1;log(`${p.g.name}【${sk(p,'fupo')}】将两张牌当【斩】`);fxCard(p,cs[0],'zhan',false);p.fupoOn=true;await doZhan(p,opp(p),cs[0]);p.fupoOn=false;}},
  feijun:{can:p=>p.hand.length>=1,need:1,async run(p,cs){removeCard(p,cs[0]);const t=opp(p);if(t.hand.length>=p.hand.length&&t.hand.length)randDiscard(t,'因【飞军】');else await pozhen(p,t);}},
  sanyao:{can:p=>p.hand.length>=1&&opp(p).hp>p.hp,need:1,async run(p,cs){removeCard(p,cs[0]);await damage(p,opp(p),1,sk(p,'sanyao'));}},
  tiaohe:{can:p=>p.hand.length>=1&&opp(p).hand.length>=1,need:0,async run(p){const t=opp(p);const a=p.hand[Math.random()*p.hand.length|0],b=t.hand[Math.random()*t.hand.length|0];removeCard(p,a);removeCard(t,b);log(`${p.g.name}弃置${cname(a)}，${t.g.name}弃置${cname(b)}`);drawCards(p,1);if(isRed(a)===isRed(b))await heal(p,1);}},
@@ -312,13 +322,13 @@ const NEW_ACTIVES={
   const d=await choose(t,`【明策】选择`,[{label:`${p.g.name}摸2张`,val:'draw'},{label:'受到1点伤害',val:'dmg'}],t.hp>=3&&t.hp<t.maxHp?'dmg':'draw');if(d==='dmg')await damage(p,t,1,sk(p,'mingce'));else drawCards(p,2);}},
  xiongluan:{limited:true,can:p=>true,need:0,async run(p){p.extraZhan=(p.extraZhan||0)+3;p.xiongluanOn=true;}},
  fencheng:{limited:true,can:p=>true,need:0,async run(p){const t=opp(p);const d=t.hand.length>=2&&await yesno(t,'【焚城】弃置2张牌？（否则受到2点伤害）',true);if(d){randDiscard(t,'因【焚城】');randDiscard(t,'因【焚城】');}else await damage(p,t,2,sk(p,'fencheng'));}},
- guhuo:{can:p=>p.hand.length>=1&&canZhan(p),need:1,async run(p,cs){const c=cs[0],t=opp(p);p.hand=p.hand.filter(x=>x!==c);afterLose(p);p.zhanUsed++;p.usedCnt=(p.usedCnt||0)+1;log(`${p.g.name}扣置一张牌当【斩】`);
+ guhuo:{can:p=>p.hand.length>=1&&canZhan(p),need:1,async run(p,cs){const c=cs[0],t=opp(p);p.hand=p.hand.filter(x=>x!==c);afterLose(p);p.zhanUsed++;p.usedCnt=(p.usedCnt||0)+1;log(`${p.g.name}扣置一张牌当【斩】`);fxCard(p,null,'zhan',true);
   const q=await yesno(t,'【蛊惑】质疑这张牌？',Math.random()<.4);G.discard.push(c);
   if(q){log(`${t.g.name}质疑，亮出${cname(c)}`);if(c.k!=='zhan'){log('质疑成功，斩无效');randDiscard(p);return;}log('质疑失败');await loseHp(t,1);if(G.over)return;}
   await doZhan(p,t,c);}},
  taoluan:{can:p=>p.hand.length>=1,need:1,async run(p,cs){const t=opp(p);const ks=['fengshou','tanma','jiezi','yexi','pozhen'];const ai=t.hand.length?(canTakeEquip(t)?'pozhen':'yexi'):'fengshou';
   const k=await choose(p,'【滔乱】当作哪张锦囊？',ks.map(x=>({label:cn(x),val:x})),ai);await playCard(p,cs[0],k);}},
- mouzhu:{can:p=>opp(p).hand.length>p.hand.length,need:0,async run(p){const t=opp(p);steal(p,t);if(p.hand.length>t.hand.length&&!G.over){log(`${p.g.name}视为使用【斩】`);await doZhan(p,t,null);}}},
+ mouzhu:{can:p=>opp(p).hand.length>p.hand.length,need:0,async run(p){const t=opp(p);steal(p,t);if(p.hand.length>t.hand.length&&!G.over){log(`${p.g.name}视为使用【斩】`);fxCard(p,null,'zhan',false);await doZhan(p,t,null);}}},
  qijing:{times:2,can:p=>(p.tian||0)>0&&opp(p).hand.length>0,need:0,async run(p){p.tian--;steal(p,opp(p));}},
  paiyi:{can:p=>(p.quan||0)>0,need:0,async run(p){p.quan--;await damage(p,opp(p),1,sk(p,'paiyi'));}},
 };
@@ -452,10 +462,15 @@ function portraitImg(id,alt){const lively=LIVELY_IDS.has(id);
 // ---- 渲染 ----
 function shake(p){const el=$(p.i?'#ai':'#me');el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');}
 function hpBar(p){let s='';for(let i=0;i<p.maxHp;i++)s+=`<i class="${i<p.hp?'on':''}"></i>`;return s;}
+function markTexts(p){const a=[];if((p.tian||0)>0)a.push('田 '+(p.tian||0));if((p.quan||0)>0)a.push('权 '+(p.quan||0));if(p.ying)a.push('营');if(p.noZhan)a.push('不能出斩');if((p.extraZhan||0)>0)a.push('斩+'+(p.extraZhan||0));if(p.woke)a.push('已觉醒');if(p.zhanguOn)a.push('战鼓');if(p.tianyiBonus)a.push('天义');if(p.hardNext)a.push('不可避');if(p.xianzhenOn)a.push('陷阵');if(p.luozhanOn)a.push('裸战');if(p.yangweiOn)a.push('扬威');if(p.xiongluanOn)a.push('雄乱');if(p.skipPlay)a.push('跳过出牌');if(p.guose)a.push('国色');if((p.drawMinus||0)>0)a.push('少摸 '+(p.drawMinus||0));if((p.wzMinus||0)>0)a.push('上限-'+(p.wzMinus||0));if((p.zhichiT||0)===G.turnNo&&G.cur&&G.cur!==p)a.push('智迟');return a;}
+function skillRow(p){const got=p.gained||[];return skillsOf(p).map(s=>`<span${got.indexOf(s)>=0?' class="gained"':''} title="${s.t||''}">${s.n}</span>`).join('')+markTexts(p).map(t=>`<span class="mark">${t}</span>`).join('');}
+function skillSheetHtml(which){const p=G.P[which];const innate=p.g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('');const gained=(p.gained||[]).length?p.gained.map(s=>`<p><b>【${s.n}】</b>获得。${s.t||''}</p>`).join(''):'';const marks=markTexts(p);return `<h3>${which===0?'己方技能':'对方技能'}</h3>${innate}${gained}${marks.length?`<p><b>状态</b> ${marks.join('、')}</p>`:''}<p><b>武器</b> ${equipText(p.weapon)}</p><p><b>防具</b> ${equipText(p.armor)}</p>`;}
+function syncSkillSheet(){const sheet=$('#skillSheet');if(skillWho==null||!sheet||!sheet.classList||typeof sheet.classList.contains!=='function'||sheet.classList.contains('hide'))return;const body=$('#skillBody');if(body&&G.P&&G.P[skillWho])body.innerHTML=skillSheetHtml(skillWho);}
+function skillBtnText(p,act){const used=(p.used||{})[act.s.k]||0,times=act.a.times||1;if(act.a.limited&&!usedUp(p,act))return `技能·${act.s.n} 限定`;if(act.a.limited&&usedUp(p,act))return '限定已发动';if(times>=99)return `技能·${act.s.n}`;return `技能·${act.s.n} ${used}/${times}`;}
 function seat(p){const fc=FACTIONS[p.g.f];
  return `<div class="portrait f-${p.g.f}">${portraitImg(p.g.id,p.g.name)}<span class="fac">${fc.n}</span></div>
  <div class="info"><div class="name">${p.g.name}${G.cur===p&&!G.over?' <em>行动中</em>':''}</div><div class="hp">${hpBar(p)}<span class="hpnum">体力 ${p.hp}/${p.maxHp}</span></div>
- <div class="skills">${p.g.skills.map(s=>`<span title="${s.t}">${s.n}</span>`).join('')}</div>
+ <div class="skills">${skillRow(p)}</div>
  <div class="equip">${['weapon','armor'].map(s=>p[s]?`<span title="${CARD_DEFS[p[s].k].t}">${s==='weapon'?'⚔':'🛡'}${cn(p[s].k)}</span>`:'').join('')}</div>
  <div class="cnt">手牌 ${p.hand.length}</div></div>`;}
 
@@ -465,23 +480,26 @@ function setAttr(el,name,value){if(!el)return;if(value==null){if(typeof el.remov
 function syncExit(){const exit=$('#exit');if(exit)exit.disabled=!!promptOpen;}
 function showScrim(){const s=$('#scrim');if(s)s.classList.remove('hide');}
 function hideScrim(){if(promptOpen)return;const s=$('#scrim');if(s)s.classList.add('hide');}
-function collapseLog(){logExpanded=false;const sheet=$('#logSheet');if(sheet)sheet.classList.remove('is-open');setAttr($('#log'),'aria-hidden','true');const btn=$('#logOpen');if(btn){setAttr(btn,'aria-label','完整日志');btn.textContent='';btn.className='';}}
-function closeSheets(){['skillSheet','ruleSheet','statsSheet','exitConfirm'].forEach(id=>{const el=$('#'+id);if(el)el.classList.add('hide');});const d=$('#detail');if(d){d.classList.add('hide');d.innerHTML='';}collapseLog();exitOpen=false;sheetOpener=null;hideScrim();}
+// #table 是特效层的定位包含块。展开的日志若留在里面，就会贴在中区而不是壳底，所以展开时挂回 #app。
+function parkLog(){const sheet=$('#logSheet'),app=$('#app');if(!sheet||!app||sheet.parentNode===app||typeof app.appendChild!=='function')return;app.appendChild(sheet);}
+function restoreLog(){const sheet=$('#logSheet'),exit=$('#exit'),home=exit&&exit.parentNode;if(!sheet||!home||sheet.parentNode===home||typeof home.insertBefore!=='function')return;home.insertBefore(sheet,exit);}
+function collapseLog(){logExpanded=false;restoreLog();const sheet=$('#logSheet');if(sheet)sheet.classList.remove('is-open');setAttr($('#log'),'aria-hidden','true');const btn=$('#logOpen');if(btn){setAttr(btn,'aria-label','完整日志');btn.textContent='';btn.className='';}}
+function closeSheets(){['skillSheet','ruleSheet','statsSheet','exitConfirm'].forEach(id=>{const el=$('#'+id);if(el)el.classList.add('hide');});const d=$('#detail');if(d){d.classList.add('hide');d.innerHTML='';}collapseLog();exitOpen=false;sheetOpener=null;skillWho=null;hideScrim();}
 function openSheet(sheet,closeSel,opener){closeSheets();if(sheet)sheet.classList.remove('hide');showScrim();sheetOpener=opener||null;const btn=closeSel?$(closeSel):null;if(btn)btn.onclick=()=>dismissSheet();focusEl(btn);}
 function dismissSheet(){const back=sheetOpener;closeSheets();focusEl(back);}
-function toggleLog(){if(promptOpen)return;if(logExpanded){collapseLog();hideScrim();focusEl($('#logOpen'));return;}closeSheets();logExpanded=true;const sheet=$('#logSheet');if(sheet)sheet.classList.add('is-open');const log=$('#log');if(log&&typeof log.removeAttribute==='function')log.removeAttribute('aria-hidden');const btn=$('#logOpen');if(btn){btn.textContent='关闭';btn.className='btn-on-paper';setAttr(btn,'aria-label','关闭');}showScrim();focusEl(btn);}
+function toggleLog(){if(promptOpen)return;if(logExpanded){collapseLog();hideScrim();focusEl($('#logOpen'));return;}closeSheets();logExpanded=true;const sheet=$('#logSheet');if(sheet)sheet.classList.add('is-open');parkLog();const log=$('#log');if(log&&typeof log.removeAttribute==='function')log.removeAttribute('aria-hidden');const btn=$('#logOpen');if(btn){btn.textContent='关闭';btn.className='btn-on-paper';setAttr(btn,'aria-label','关闭');}showScrim();focusEl(btn);}
 function onScrim(){if(promptOpen)return;if(exitOpen){closeExit();return;}const back=logExpanded?$('#logOpen'):sheetOpener;closeSheets();focusEl(back);}
 function openExit(){if(promptOpen)return;const exit=$('#exit');if(exit&&exit.disabled)return;closeSheets();exitOpen=true;const box=$('#exitConfirm');if(box)box.classList.remove('hide');showScrim();focusEl($('#exitStay'));}
 function closeExit(){exitOpen=false;const box=$('#exitConfirm');if(box)box.classList.add('hide');hideScrim();focusEl($('#exit'));}
 function leaveMatch(){if(NET)location.href=location.pathname;else location.reload();}
 function equipText(card){if(!card)return '无';const d=CARD_DEFS[card.k];return d?`${d.n}：${d.t}`:'无';}
-function showSkill(which){if(promptOpen||!G.P)return;const p=G.P[which];if(!p||!p.g)return;const body=$('#skillBody');if(!body)return;body.innerHTML=`<h3>${which===0?'己方技能':'对方技能'}</h3>${p.g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('')}<p><b>武器</b> ${equipText(p.weapon)}</p><p><b>防具</b> ${equipText(p.armor)}</p>`;openSheet($('#skillSheet'),'#skillClose',$(which===0?'#me':'#ai'));}
+function showSkill(which){if(promptOpen||!G.P)return;const p=G.P[which];if(!p||!p.g)return;const body=$('#skillBody');if(!body)return;body.innerHTML=skillSheetHtml(which);openSheet($('#skillSheet'),'#skillClose',$(which===0?'#me':'#ai'));skillWho=which;}
 function showPrompt(msg,opts,onChoose){closeSheets();promptOpen=true;const box=$('#prompt');box.innerHTML='';const p=document.createElement('p');p.textContent=msg;box.appendChild(p);const wrap=document.createElement('div');wrap.className='prompt-opts'+(opts.length===2?' cols-2':'');for(const o of opts){const b=document.createElement('button');b.type='button';b.className='btn-secondary';b.textContent=o.label;b.onclick=()=>{box.classList.add('hide');promptOpen=false;syncExit();hideScrim();onChoose(o.val);};wrap.appendChild(b);}box.appendChild(wrap);box.classList.remove('hide');showScrim();syncExit();}
 function commitPlay(c){if(playCommit||!c)return;playCommit=true;const bar=$('#actions');if(bar&&bar.children&&typeof bar.children.length==='number'){for(const b of bar.children)if(b&&b.tagName==='BUTTON')b.disabled=true;}const guest=!!(NET&&NET.role==='guest');const waiting=!!pending;resolveUser({t:'card',c});if(!guest&&!waiting)playCommit=false;}
 function bindPlaySwipe(el,c){let sx=0,sy=0,scrolling=false,pid=null;el.onpointerdown=e=>{if(playCommit||e.isPrimary===false)return;if(typeof e.button==='number'&&e.button!==0)return;sx=e.clientX;sy=e.clientY;scrolling=false;pid=e.pointerId;if(typeof el.setPointerCapture==='function'&&e.pointerId!=null){try{el.setPointerCapture(e.pointerId);}catch(err){}}};el.onpointermove=e=>{if(pid==null||e.pointerId!==pid||playCommit)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy))scrolling=true;};el.onpointerup=e=>{if(pid==null||e.pointerId!==pid||playCommit)return;pid=null;const dx=e.clientX-sx,dy=e.clientY-sy;if(scrolling)return;if(Math.hypot(dx,dy)<10){playSel=null;render();return;}if(dy<=-48&&Math.abs(dx)<=24&&Math.abs(dy)>Math.abs(dx)){el.onpointerdown=el.onpointermove=el.onpointerup=el.onpointercancel=null;commitPlay(c);}};el.onpointercancel=e=>{if(pid==null||e.pointerId===pid)pid=null;};}
 function copyRoomLink(){const input=$('#rl');const text=input&&input.value||'';const done=ok=>{const cp=$('#cp');if(!cp)return;if(ok){cp.textContent='已复制';return;}cp.textContent='复制失败，请长按链接';if(input&&typeof input.focus==='function')input.focus();if(input&&typeof input.select==='function')input.select();};const fallback=()=>{if(input&&typeof input.focus==='function')input.focus();if(input&&typeof input.select==='function')input.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){ok=false;}done(!!ok);};if(navigator.clipboard&&window.isSecureContext&&typeof navigator.clipboard.writeText==='function'){try{navigator.clipboard.writeText(text).then(()=>done(true),fallback);}catch(e){fallback();}return;}fallback();}
 function render(){if(!G.P)return;if(window.HARNESS){for(const p of G.P)if(p.hand.some(c=>!c))throw new Error('undef card '+p.g.id+' '+new Error().stack);}if(NET&&NET.role==='host'&&G.P[1].remote)send(snap());const [me,ai]=G.P;
- $('#ai').innerHTML=seat(ai);$('#me').innerHTML=seat(me);
+ $('#ai').innerHTML=seat(ai);$('#me').innerHTML=seat(me);syncSkillSheet();
  $('#aihand').innerHTML=ai.hand.map(()=>'<div class="card back"></div>').join('');
  $('#deckinfo').textContent=`牌堆 ${G.deck.length}`;$('#discardinfo').textContent=`弃牌 ${G.discard.length}`;
  const localPlay=G.phase==='play'&&G.cur===me;
@@ -498,7 +516,7 @@ function render(){if(!G.P)return;if(window.HARNESS){for(const p of G.P)if(p.hand
  if(G.over)return;
  const btn=(t,fn,dis,primary=true)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.disabled=!!dis;b.className=primary?'btn-primary':'btn-secondary';b.onclick=fn;bar.appendChild(b);};
  if(localPlay){if(playSel){btn('确认打出',()=>commitPlay(playSel),playCommit);btn('取消',()=>{if(playCommit)return;playSel=null;render();},playCommit,false);}
-  else{const act=activeOf(me);if(act)btn(`技能·${act.s.n}`,()=>startSkill(me,act),usedUp(me,act)||!act.a.can(me));btn('结束出牌',()=>resolveUser({t:'end'}));}}
+  else{const act=activeOf(me);if(act)btn(skillBtnText(me,act),()=>startSkill(me,act),usedUp(me,act)||!act.a.can(me));btn('结束出牌',()=>resolveUser({t:'end'}));}}
  if(G.phase==='discard')btn(`弃牌 ${G.sel.length}/${G.needSel}`,()=>resolveUser(true),G.sel.length!==G.needSel);
  if(G.phase==='skill'){btn(`确认 ${G.sel.length}${G.selAct&&G.selAct.a.needAny?'':'/'+G.needSel}`,()=>{const cards=G.sel;G.sel=[];G.selFilter=null;G.phase='busy';G.skillDone(cards);},!(G.selAct&&validSel(G.selAct,G.sel)));btn('取消',()=>{G.sel=[];G.selFilter=null;G.phase='play';render();},false,false);}
  if(!G.phase||G.cur!==me)bar.innerHTML='<span class="wait">'+(G.cur===me?'…':(NET?'对手思考中…':'AI 思考中…'))+'</span>';
@@ -511,8 +529,8 @@ function startSkill(p,act){const go=cards=>{if(NET&&NET.role==='guest'){resolveU
 let NET=null,rpending=null;
 function send(m){if(NET&&NET.conn&&NET.conn.open)NET.conn.send(m);}
 function waitRemote(f){return new Promise(r=>rpending={r,f});}
-function snap(){const R=G.P[1];const v=p=>({i:p===R?0:1,id:p.g.id,hp:p.hp,maxHp:p.maxHp,hand:p===R?p.hand:p.hand.length,weapon:p.weapon,armor:p.armor,zhanUsed:p.zhanUsed,extraZhan:p.extraZhan,used:p.used,limitUsed:p.limitUsed,gained:p.gained,noZhan:p.noZhan,tian:p.tian,quan:p.quan});
- return {type:'state',P:[v(R),v(G.P[0])],cur:G.cur===R?0:G.cur?1:-1,phase:G.rphase||'',need:G.rneed||0,deck:G.deck.length,disc:G.discard.length,over:G.over};}
+function snap(){const R=G.P[1];const v=p=>({i:p===R?0:1,id:p.g.id,hp:p.hp,maxHp:p.maxHp,hand:p===R?p.hand:p.hand.length,weapon:p.weapon,armor:p.armor,zhanUsed:p.zhanUsed,extraZhan:p.extraZhan,used:p.used,limitUsed:p.limitUsed,gained:p.gained,noZhan:p.noZhan,tian:p.tian,quan:p.quan,woke:p.woke,ying:p.ying,zhanguOn:p.zhanguOn,tianyiBonus:p.tianyiBonus,hardNext:p.hardNext,xianzhenOn:p.xianzhenOn,luozhanOn:p.luozhanOn,yangweiOn:p.yangweiOn,xiongluanOn:p.xiongluanOn,skipPlay:p.skipPlay,zhichiT:p.zhichiT,guose:p.guose,drawMinus:p.drawMinus,wzMinus:p.wzMinus});
+ return {type:'state',P:[v(R),v(G.P[0])],cur:G.cur===R?0:G.cur?1:-1,phase:G.rphase||'',need:G.rneed||0,deck:G.deck.length,disc:G.discard.length,over:G.over,turnNo:G.turnNo};}
 async function remotePlay(p){
  while(!G.over){G.rphase='play';render();const a=await waitRemote(a=>['card','skill','end'].includes(a.t));if(G.over)break;
   if(a.t==='end')break;
@@ -531,14 +549,14 @@ function onMsg(m){
  // guest
  if(m.type==='offer'){$('#lobby').innerHTML='已连接！从下面 8 位武将中选择出战。';selectScreen(m.ids);}
  if(m.type==='log')log(m.t);
- if(m.type==='fx'){const p=G.P&&G.P[m.w];if(p)float(p,m.txt,m.cls);}
+ if(m.type==='fx'){if(m.kind==='card'){const p=G.P&&G.P[m.w];if(p)paintFxCard(p,m.key,m.suit,!!m.red,!!m.faceDown);}else if(m.kind==='skill')paintSkill(m.name);else{const p=G.P&&G.P[m.w];if(p)paintFloat(p,m.txt,m.cls);}}
  if(m.type==='state'){$('#select').classList.add('hide');$('#detail').classList.add('hide');$('#battle').classList.remove('hide');
   const P=m.P.map(v=>({...v,g:GENERALS.find(g=>g.id===v.id),hand:Array.isArray(v.hand)?v.hand:Array.from({length:v.hand},()=>({}))}));
   if(G.phase!==m.phase||m.phase==='play'){G.sel=G.phase===m.phase?G.sel||[]:[];}
   if(G.phase==='skill'&&m.phase==='play'){}else G.phase=m.phase;
-  Object.assign(G,{P,cur:P[m.cur]||null,needSel:m.need,deck:{length:m.deck},discard:{length:m.disc},over:m.over});if(!G.sel)G.sel=[];render();}
+  Object.assign(G,{P,cur:P[m.cur]||null,needSel:m.need,deck:{length:m.deck},discard:{length:m.disc},over:m.over,turnNo:m.turnNo||0});if(!G.sel)G.sel=[];render();}
  if(m.type==='ask')showPrompt(m.msg,m.opts,val=>send({type:'act',t:'ans',val}));
- if(m.type==='over'){G.over=true;render();promptOpen=false;$('#prompt').classList.add('hide');closeSheets();$('#over').innerHTML=`<h2>${m.win?'胜利！':'败北…'}</h2><p>${m.name} 获胜</p><p>想再战请让房主新建房间</p><button class="btn-primary" type="button" onclick="location.href=location.pathname">返回首页</button>`;$('#over').classList.remove('hide');}
+ if(m.type==='over'){G.over=true;render();promptOpen=false;$('#prompt').classList.add('hide');closeSheets();clearFx();$('#over').innerHTML=`<h2>${m.win?'胜利！':'败北…'}</h2><p>${m.name} 获胜</p><p>想再战请让房主新建房间</p><button class="btn-primary" type="button" onclick="location.href=location.pathname">返回首页</button>`;$('#over').classList.remove('hide');}
 }
 function setupConn(conn){NET.conn=conn;conn.on('data',onMsg);conn.on('close',()=>{if(!G.over)alert('对手已断开连接');});}
 function newCode(){return Math.random().toString(36).slice(2,8).toUpperCase();}
