@@ -429,7 +429,19 @@ function aiChoose(p,t){const h=p.hand;const f=k=>h.find(c=>c.k===k&&canPlay(p,c)
  if(p.hp<p.maxHp&&f('yao')&&h.length>handLimit(p))return f('yao');
  return null;}
 
-const LIVELY_IDS=new Set(['caocao','guanyu','zhouyu','lvbu','zhugeliang','diaochan','dianwei','huatuo']);
+const LIVELY_IDS=new Set([
+ 'caocao','zhangliao','xiahoudun','simayi','xuchu','dianwei','xunyu','guojia',
+ 'caoren','zhanghe','xuhuang','caopi','liubei','guanyu','zhangfei','zhugeliang',
+ 'zhaoyun','machao','huangzhong','weiyan','pangtong','jiangwei','huangyueying','fazheng',
+ 'sunquan','zhouyu','ganning','sunshangxiang','lusu','lvmeng','luxun','taishici',
+ 'huanggai','zhoutai','daqiao','xiaoqiao','lvbu','huatuo','diaochan','yuanshao',
+ 'dongzhuo','jiaxu','yanliang','wenchou','zhangjiao','gongsunzan','mateng','caiwenji',
+ 'caozhi','caozhang','xiahouyuan','yujin','yuejin','pangde','dengai','zhonghui',
+ 'xunyou','chengyu','manchong','wangyi','guanxing','zhangbao','guanping','madai',
+ 'wangping','maliang','masu','jiangwan','feiyi','liushan','zhurong','menghuo',
+ 'sunce','sunjian','chengpu','handang','lingtong','xusheng','dingfeng','zhuran',
+ 'zhugejin','bulianshi','yufan','zhangzhao','yuanshu','huaxiong','gaoshun','chengong',
+ 'zhangxiu','liru','zuoci','yuji','liubiao','zhangrang','kongrong','hejin']);
 function portraitImg(id,alt){const lively=LIVELY_IDS.has(id);
  const src=lively?`assets/portraits/${id}.png`:`assets/portraits/${id}.svg`;
  const cls=lively?' class="portrait-illust"':'';
