@@ -296,9 +296,9 @@ Mobile-first vertical UI spec
 
 ## 10. 手牌与出牌 / Hand and play
 
-手牌是一行横滑，不是扇形，不是两行网格，牌与牌不重叠，不用旋转。
+手牌是一行横滑，不是扇形，不是两行网格，不用旋转。同屏最多完整展示 8 张：张数 ≤8 时牌与牌不重叠，间距仍是 `--s-3`（12px）；超过 8 张时允许部分重叠，用负 `margin-left` 把整排压进约「8 张完整牌 + 7 个间距」的总宽，露出至少约 28px，`z-index` 随序号递增，选中牌最高。
 
-`#hand`：`display: flex`，`flex-wrap: nowrap`，`gap: 12px`，`overflow-x: auto`，`overflow-y: hidden`，`padding-top: 20px`，`-webkit-overflow-scrolling: touch`，`touch-action: pan-x`。视口高度 ≤640px 时，上内边距和牌尺寸改用第 9.3 节。
+`#hand`：`display: flex`，`flex-wrap: nowrap`，默认 `gap: 12px`（≤8 张），`overflow-x: auto`，`overflow-y: hidden`，`padding-top: 20px`，`-webkit-overflow-scrolling: touch`，`touch-action: pan-x`。超过 8 张时加 `hand-overlap`，`gap: 0`，由 `layoutHand()` 按实际牌宽算重叠。视口高度 ≤640px 时，上内边距和牌尺寸改用第 9.3 节。
 
 单张 120×168，`flex: none`。纸色、墨字、3px 墨边、8px 圆角、`0 3px 0 #0a0908`。锦囊 `--trick`，武器和防具 `--equip`。牌名 16px。斩 / 避 / 药只给牌名上色。花色红 `#9d2b22`，黑 `--paper-ink`。说明 14px，最多 4 行。不可出的牌不透明度仍是 1，用 `filter: grayscale(0.35)`，不加 `opacity`。
 
