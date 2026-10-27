@@ -523,3 +523,9 @@ button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 .tut-done{font-weight:700}
 .pz-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid rgba(26,18,12,.25)}
 .pz-row p{margin:0}.pz-row.locked{opacity:.5}.pz-row button{flex:none; min-width:84px}
+
+.join-row{display:flex;gap:8px;width:100%}.join-row input{flex:1;min-width:0;font-size:18px;letter-spacing:4px;text-align:center;text-transform:uppercase;padding:10px;border-radius:10px;border:1px solid #8a6d3b;background:#fffaf0}
+.join-row button{flex:0 0 auto;padding:0 18px}
+.room-box{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:stretch}.room-box p{margin:0}
+#roomCode{font-size:44px;letter-spacing:10px;font-family:monospace}.room-ttl{font-size:13px;opacity:.8}.room-btns{display:flex;gap:8px}.room-btns button{flex:1}
+#againMsg{min-height:1.2em;font-size:14px}
