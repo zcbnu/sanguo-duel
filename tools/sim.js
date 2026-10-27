@@ -5,7 +5,7 @@ const el=()=>new Proxy({},{get:(t,k)=>k in t?t[k]:(k==='classList'?{add(){},remo
 const ctx={URLSearchParams,console,Math,JSON,Promise,setTimeout,Array,Object,Set,String,Number,
  document:{querySelector:()=>el(),createElement:()=>el()},localStorage:{},location:{search:'?auto',origin:'',pathname:'/'},navigator:{}};
 ctx.window=ctx;ctx.HARNESS=true;vm.createContext(ctx);
-for(const f of ['data/generals.js','data/cards.js','data/lines.js','game.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
+for(const f of ['data/generals.js','data/cards.js','data/lines.js','data/modes.js','game.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
 vm.runInContext('window.__start=start;window.__G=G;',ctx);
 const GS0=ctx.GENERALS,N=+process.argv[2]||6;const ONLY=process.argv[3];const GS=GS0;
 async function game(a,b){return new Promise((res,rej)=>{let done=false;ctx.onGameOver=w=>{if(!done){done=true;if(ctx.__oppFull&&w===ctx.__G.cur){ctx.ONESHOT=(ctx.ONESHOT||0)+1;(ctx.OS=ctx.OS||{})[w.g.id]=(ctx.OS[w.g.id]||0)+1;if(!ctx.OSLOG)ctx.OSLOG=[...ctx.LOGS];}res({w:w.g.id,turns:ctx.__G.turnNo});}};

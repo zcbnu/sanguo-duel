@@ -120,10 +120,11 @@ async function dying(p){
   [...p.hand].forEach(c=>{p.hand=p.hand.filter(x=>x!==c);G.discard.push(c);});['weapon','armor'].forEach(s=>{if(p[s]){G.discard.push(p[s]);p[s]=null;}});p.hp=Math.min(2,p.maxHp);drawCards(p,2);}
  if(p.hp<=0&&has(p,'buqu')){p.buqu=p.buqu||[];const c=topCard();if(c){const dup=p.buqu.some(x=>x.r===c.r)||p.buqu.length>=4;p.buqu.push(c);log(`${p.g.name}【${sk(p,'buqu')}】亮出${cname(c)}${dup?'，点数重复！':'，存活'}`);if(!dup)p.hp=1;}}
  if(p.hp<=0&&!G.over){say(p,LINE.defeat(p.g),'defeat');await sleep(900);endGame(opp(p));}}
-function endGame(w){G.over=true;render();const me=w.i===0;const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');if(!AUTO&&!G.tut){me?st.w++:st.l++;localStorage.sgStats=JSON.stringify(st);}
+function endGame(w){G.over=true;render();const me=w.i===0;const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');if(!AUTO&&!G.tut&&!G.mode){me?st.w++:st.l++;localStorage.sgStats=JSON.stringify(st);}
  if(window.onGameOver)window.onGameOver(w);
  promptOpen=false;$('#prompt').classList.add('hide');closeSheets();clearFx();
  const seed=G.seed||0,l=opp(w);if(NET)send({type:'over',win:w.i===1,name:w.g.name,wid:w.g.id,lid:l.g.id,seed,turn:G.turnNo});
+ if(G.mode){const tail=G.mode.type==='puzzle'?puzzleResult(me):dailyResult(me);$('#over').innerHTML=overCard(me,w.g,l.g,seed,G.turnNo,tail);$('#over').classList.remove('hide');resolveUser(null);return;}
  if(G.tut){if(me)localStorage.sgTutDone='1';$('#over').innerHTML=overCard(me,w.g,l.g,seed,G.turnNo,me?'<p class="tut-done">教程完成！已解锁自由选将与联机大厅。</p><button class="btn-primary" type="button" onclick="location.reload()">进入大厅</button>':'<p>再试一次，按提示出牌即可。</p><button class="btn-primary" type="button" onclick="location.reload()">重开教程</button>');$('#over').classList.remove('hide');resolveUser(null);return;}
  $('#over').innerHTML=overCard(me,w.g,l.g,seed,G.turnNo,`<p>战绩：${st.w} 胜 ${st.l} 负</p><button class="btn-primary" type="button" onclick="location.reload()">再来一局</button>`);$('#over').classList.remove('hide');resolveUser(null);}
 function overCard(me,wg,lg,seed,turn,tail){const fc=FACTIONS[wg.f]||{n:''};return `<div class="over-card f-${wg.f}"><h2>${me?'胜利！':'败北…'}</h2>${portraitImg(wg.id,wg.name)}<p class="over-who"><span class="fac">${fc.n}</span>${wg.name} 获胜</p><p class="over-report">「${LINE.report(wg,lg,seed)}」</p><p class="over-sub">${me?'此战当载入史册':'胜败乃兵家常事'} · 共 ${turn||0} 回合</p></div>${tail}`;}
@@ -602,6 +603,32 @@ function tutTip(me){const el=$('#tutTip');if(!el)return;const T=G.tut;if(!T||G.o
  else t=T.bi?'教程：对方回合，稍候…':'教程 ③：对方出【斩】时，选择打出【避】抵消';
  el.textContent=t+`（斩${T.zhan?'✓':'·'} 避${T.bi?'✓':'·'} 技能${T.skill?'✓':'·'}）`;}
 function startTutorial(){closeSheets();const g=GENERALS.find(x=>x.id===TUT_ME),a=GENERALS.find(x=>x.id===TUT_AI);start(g,a,false,true);}
+// ---- 残局挑战 ----
+function pzProg(){return +(localStorage.sgPuzzle||0);}
+function mkCard(spec){const [k,s]=spec.split(':');return {id:uid++,k,s:s||'spade',r:1+(Math.random()*13|0)};}
+function puzzleDeal(pz){const [me,ai]=G.P;if(pz.meHp)me.hp=pz.meHp;ai.hp=pz.aiHp||ai.hp;me.hand=pz.hand.map(mkCard);ai.hand=pz.aiHand.map(mkCard);
+ if(pz.weapon)me.weapon=mkCard(pz.weapon);if(pz.armor)me.armor=mkCard(pz.armor);if(pz.aiArmor)ai.armor=mkCard(pz.aiArmor);
+ log(`【残局${pz.id}·${pz.name}】${pz.goal}`);render();}
+function puzzleResult(me){const pz=G.mode.pz;const why=G.timeUp?`超过 ${pz.limit} 回合`:me?'':'你被击败';let t;
+ if(me){if(pzProg()<pz.id)localStorage.sgPuzzle=pz.id;t=`<p class="tut-done">残局 ${pz.id}「${pz.name}」通关！${pz.id<PUZZLES.length?'已解锁下一关。':'全部 5 关已通关！'}</p>`;}
+ else t=`<p>挑战失败：${why}。重开后初始局面完全相同。</p>`;
+ return t+`<button class="btn-primary" type="button" onclick="startPuzzle(${me&&pz.id<PUZZLES.length?pz.id+1:pz.id})">${me&&pz.id<PUZZLES.length?'下一关':'重开本关'}</button><button class="btn-secondary" type="button" onclick="location.reload()">返回大厅</button>`;}
+function openPuzzles(){const done=pzProg();const body=$('#puzzleBody');
+ body.innerHTML='<h3>残局挑战</h3><p>预设场面，限定回合内取胜。通关解锁下一关。</p>'+PUZZLES.map(pz=>{const lock=pz.id>done+1;const me=GENERALS.find(g=>g.id===pz.me),ai=GENERALS.find(g=>g.id===pz.ai);
+  return `<div class="pz-row${lock?' locked':''}"><p><b>${pz.id}. ${pz.name}</b> ${pz.id<=done?'✓':''}<br><small>${me.name} vs ${ai.name} · 限 ${pz.limit} 回合</small></p><button type="button" class="btn-primary" ${lock?'disabled':''} onclick="startPuzzle(${pz.id})">${lock?'未解锁':'挑战'}</button></div>`;}).join('');
+ openSheet($('#puzzleSheet'),'#puzzleClose',$('#puzzleBtn'));}
+function startPuzzle(id){const pz=PUZZLES.find(x=>x.id===id);if(!pz||id>pzProg()+1)return;
+ if(G.P){location.href=location.pathname+'?pz='+id;return;}closeSheets();
+ start(GENERALS.find(g=>g.id===pz.me),GENERALS.find(g=>g.id===pz.ai),false,false,{type:'puzzle',pz,seed:9000+id});}
+// ---- 每日一战 ----
+function dailyState(){try{return JSON.parse(localStorage.sgDaily||'{}');}catch(e){return {};}}
+function dailyText(){const d=dailyState(),t=DAILY.today();return `连胜 ${d.streak||0} · 最佳 ${d.best||0} · 徽章 ${(d.wins||[]).length} 枚${d.last===t?' · 今日已获胜':''}`;}
+function openDaily(){const seed=DAILY.today();const {pick,foe}=DAILY.pool(seed,GENERALS.map(g=>g.id));G.daily={seed,foe};
+ selectScreen(pick);$('#selectTitle').textContent=`每日一战 ${seed} · 对手：${GENERALS.find(g=>g.id===foe).name}`;$('#lobby').textContent=dailyText();}
+function dailyResult(me){const d=dailyState(),t=G.mode.seed;let msg;
+ if(me){if(d.last!==t){d.streak=d.last===DAILY.yesterday()?(d.streak||0)+1:1;d.best=Math.max(d.best||0,d.streak);d.wins=(d.wins||[]).concat(t).slice(-366);d.last=t;localStorage.sgDaily=JSON.stringify(d);msg=`<p class="tut-done">获得今日徽章 🏅 ${t}！</p>`;}else msg='<p>今日徽章已领取，可明天再来。</p>';}
+ else msg='<p>惜败。同一天重开局面一致，可再战。</p>';
+ return msg+`<p>${dailyText()}</p><button class="btn-primary" type="button" onclick="location.href=location.pathname+'?daily=1'">再战今日</button><button class="btn-secondary" type="button" onclick="location.reload()">返回大厅</button>`;}
 // ---- 选将 ----
 let OFFER=[],PICK=null;
 function fillSlot(g){PICK=g;const body=$('#picked-body'),btn=$('#confirm'),detail=$('#detailOpen');
@@ -611,6 +638,7 @@ function fillSlot(g){PICK=g;const body=$('#picked-body'),btn=$('#confirm'),detai
  btn.disabled=false;btn.textContent='出战';if(detail)detail.disabled=false;
  if(typeof body.querySelector==='function'){const img=body.querySelector('img');if(img)img.onclick=()=>{if(PICK)showDetail(PICK);};}}
 function confirmPick(){const g=PICK;if(!g)return;closeSheets();
+ if(!NET&&G.daily){start(g,GENERALS.find(x=>x.id===G.daily.foe),false,false,{type:'daily',seed:G.daily.seed*100+GENERALS.indexOf(g)});return;}
  if(!NET){const pool=GENERALS.filter(x=>x!==g);start(g,pool[Math.random()*pool.length|0],false);return;}
  if(NET.role==='guest'){send({type:'pick',id:g.id});$('#grid').innerHTML='';$('#lobby').innerHTML=`你选择了${g.name}，等待房主选将…`;$('#confirm').disabled=true;$('#confirm').textContent='等待对手';return;}
  if(!NET.conn)return;NET.myPick=g;$('#grid').innerHTML='';$('#confirm').disabled=true;$('#confirm').textContent='等待对手';tryStartNet();}
@@ -626,16 +654,16 @@ function showDetail(g){if(!g)return;const d=$('#detail');const fc=FACTIONS[g.f];
  openSheet(d,null,$('#detailOpen'));
  d.innerHTML=`<button id="cl" class="btn-on-paper" type="button">关闭</button>${portraitImg(g.id,g.name)}<h3>${fc.n}·${g.name}</h3><p>体力 ${g.hp}</p>${g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('')}`;
  const btn=$('#cl');if(btn)btn.onclick=()=>dismissSheet();focusEl(btn);}
-async function start(g,ag,net,tut){
+async function start(g,ag,net,tut,mode){if(mode&&mode.seed!=null)Math.random=SEEDRNG(mode.seed);
  $('#select').classList.add('hide');$('#battle').classList.remove('hide');
  const mk=(i,gg,ai)=>({i,g:gg,ai,hp:gg.hp,maxHp:gg.hp,hand:[],weapon:null,armor:null,zhanUsed:0,used:{},gained:[]});
- Object.assign(G,{deck:buildDeck(),discard:[],P:[mk(0,g,AUTO),mk(1,ag,!net)],over:false,turnNo:0,phase:'',sel:[],seed:Math.random()*1e6|0,tut:tut?{zhan:false,bi:false,skill:false}:null});
+ Object.assign(G,{deck:buildDeck(),discard:[],P:[mk(0,g,AUTO),mk(1,ag,!net)],over:false,turnNo:0,phase:'',sel:[],seed:Math.random()*1e6|0,tut:tut?{zhan:false,bi:false,skill:false}:null,mode:mode||null,myTurns:0});
  if(net)G.P[1].remote=true;
  log(net?`房主选择了${g.name}，对手选择了${ag.name}`:`你选择了${g.name}，AI 选择了${ag.name}`);
  await showIntro(G.P[0],G.P[1]);
- if(tut)tutDeal();else G.P.forEach(p=>{drawCards(p,4);if(has(p,'huanshen'))gainSafe(p);});
- let cur=tut?0:Math.random()<.5?0:1;log(`${G.P[cur].g.name} 先手`);
- while(!G.over){await turn(G.P[cur]);cur=1-cur;}}
+if(mode&&mode.type==='puzzle')puzzleDeal(mode.pz);else if(tut)tutDeal();else G.P.forEach(p=>{drawCards(p,4);if(has(p,'huanshen'))gainSafe(p);});
+ let cur=tut||(mode&&mode.type==='puzzle')?0:Math.random()<.5?0:1;log(`${G.P[cur].g.name} 先手`);
+ while(!G.over){if(cur===0&&G.mode&&G.mode.type==='puzzle'&&++G.myTurns>G.mode.pz.limit){log(`【残局】已超过 ${G.mode.pz.limit} 回合，挑战失败`);G.timeUp=true;endGame(G.P[1]);break;}await turn(G.P[cur]);cur=1-cur;}}
 function initLobby(){const room=new URLSearchParams(location.search).get('room');
  $('#pve').onclick=()=>{closeSheets();selectScreen();};$('#host').onclick=()=>{$('#modes').classList.add('hide');hostRoom();};
  const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');$('#stats').textContent=`人机战绩 ${st.w} 胜 ${st.l} 负 · 武将池 ${GENERALS.length} 位，每局随机 8 位`;
@@ -648,8 +676,10 @@ function initLobby(){const room=new URLSearchParams(location.search).get('room')
  $('#me').onclick=()=>{if(!promptOpen&&G.P)showSkill(0);};
  $('#ai').onclick=()=>{if(!promptOpen&&G.P)showSkill(1);};
  $('#logOpen').onclick=toggleLog;$('#scrim').onclick=onScrim;
+ $('#puzzleBtn').onclick=openPuzzles;$('#dailyBtn').onclick=()=>{closeSheets();openDaily();};
  if(room){joinRoom(room.toUpperCase());return;}
- if(!window.HARNESS&&!/auto/.test(location.search)&&!tutDone()){$('#pve').textContent='首胜教程（约 3 分钟）';$('#pve').onclick=startTutorial;$('#host').classList.add('hide');$('#selectTitle').textContent='新手请先完成首胜教程';}}
+ if(!window.HARNESS&&!/auto/.test(location.search)&&!tutDone()){$('#pve').textContent='首胜教程（约 3 分钟）';$('#pve').onclick=startTutorial;$('#host').classList.add('hide');$('#puzzleBtn').classList.add('hide');$('#dailyBtn').classList.add('hide');$('#selectTitle').textContent='新手请先完成首胜教程';return;}
+ const q=new URLSearchParams(location.search);setTimeout(()=>{if(q.get('pz'))startPuzzle(+q.get('pz'));else if(q.get('daily'))openDaily();},0);}
 $('#ruleBox').innerHTML='<h3>规则</h3><p>回合：摸2张 → 出牌 → 弃牌至手牌上限（=当前体力）。把对方体力打到0即获胜。双方起手4张。</p><p><b>花色与判定</b>：每张牌有花色（♠♥♣♦）与点数（A–K），判定=亮出牌堆顶一张牌；拼点=双方各出一张手牌比点数。</p><p><b>护体</b>：回合开始时对方体力全满，则本回合无法将其击杀（至多打到1）。</p><p><b>兵疲</b>：第21回合起，每名角色回合开始时失去1点体力。</p>'+Object.values(CARD_DEFS).map(d=>`<p><b>【${d.n}】</b>×${d.cnt} ${d.t}</p>`).join('');
 initLobby();
 const AUTO=/auto/.test(location.search);if(AUTO&&!window.HARNESS){window.onerror=e=>document.title="ERR "+e;window.onunhandledrejection=e=>document.title="ERR "+(e.reason&&e.reason.stack||e.reason);window.onGameOver=w=>{if(!/^ERR/.test(document.title))document.title="OVER "+w.g.id+" T"+G.turnNo;};{const g=GENERALS[+(location.search.split("g=")[1]||0)];const pool=GENERALS.filter(x=>x!==g);start(g,pool[Math.random()*pool.length|0],false);}}
