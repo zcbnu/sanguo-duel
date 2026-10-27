@@ -78,8 +78,8 @@ async function respond(p,k,msg){
  if(k==='bi'&&p.noBi){return false;}
  const list=asCards(p,k);if(!list.length)return false;
  const VALr=c=>c.k===k?1:0;const c=[...list].sort((a,b)=>VALr(b)-VALr(a))[0];
- let use=true;if(!p.ai)use=await ask(p,msg+`（可用${list.length}张）`,[{label:'打出'+cname(c)+(c.k!==k?`当【${cn(k)}】`:''),val:true},{label:'不出',val:false}]);
- if(!use)return false;removeCard(p,c);log(`${p.g.name}打出${cname(c)}${c.k!==k?`当【${cn(k)}】`:''}`);fxCard(p,c,k,false);render();await sleep(350);
+ let use=true;if(!p.ai)use=await ask(p,(G.tut&&k==='bi'?'【教程】对方出【斩】了，打出【避】可抵消伤害！':'')+msg+`（可用${list.length}张）`,[{label:'打出'+cname(c)+(c.k!==k?`当【${cn(k)}】`:''),val:true},{label:'不出',val:false}]);
+ if(!use)return false;if(G.tut&&!p.ai&&k==='bi')G.tut.bi=true;removeCard(p,c);log(`${p.g.name}打出${cname(c)}${c.k!==k?`当【${cn(k)}】`:''}`);fxCard(p,c,k,false);render();await sleep(350);
  if(k==='bi')await onDodge(p);
  if(k==='bi'&&has(p,'leiji')&&!G.over){const t=opp(p);if(await yesno(p,`发动【${sk(p,'leiji')}】令对方判定？`,true)){log(`${p.g.name}发动【${sk(p,'leiji')}】`);const j=await judge(t,sk(p,'leiji'),x=>x.s!=='spade');if(j.s==='spade')await damage(p,t,2,'雷击');}}
  return true;}
@@ -90,7 +90,7 @@ async function damage(src,t,n,why,card){
  if(has(t,'tianxiang')){const hs=t.hand.filter(c=>suitOf(t,c)==='heart');if(hs.length){const aiC=[...hs].sort((a,b)=>VAL[a.k]-VAL[b.k])[0];
   const use=await yesno(t,`发动【${sk(t,'tianxiang')}】弃一张♥牌防止${n}点伤害？`,n>=2||t.hp<=n+1||VAL[aiC.k]<=6);
   if(use){const c=t.ai?aiC:await pickCard(t,'弃置哪张♥牌？',hs,aiC);removeCard(t,c);log(`${t.g.name}发动【${sk(t,'tianxiang')}】防止伤害`);if(src&&src!==t)randDiscard(src);drawCards(t,1);render();return;}}}
- t.hp-=n;log(`${t.g.name}受到${n}点伤害${why?'（'+why+'）':''}，体力${t.hp}`);float(t,'-'+n,'bad');shake(t);render();await sleep(450);
+ t.hp-=n;log(`${t.g.name}受到${n}点伤害${why?'（'+why+'）':''}，体力${t.hp}`);float(t,'-'+n,'bad');shake(t);render();await sleep(450);despairCheck(t);
  if(t.hp<=0)await dying(t);
  if(G.over)return;
  const s=src&&src!==t?src:null;if(s)s.dealt=true;await afterDamaged(t,s,n,why,card);if(G.over)return;
@@ -107,7 +107,7 @@ async function damage(src,t,n,why,card){
   const c=t.ai?aiDiscardOrder(t)[0]:await pickCard(t,'弃置哪张？',t.hand);removeCard(t,c);const j=await judge(t,sk(t,'beige'),()=>true);
   if(j.s==='heart')await heal(t,1);else if(j.s==='diamond')drawCards(t,2);else if(j.s==='club'){randDiscard(s);randDiscard(s);}else{s.skipPlay=true;log(`${s.g.name}下回合将跳过出牌阶段`);}}
  render();}
-async function loseHp(p,n){n=guardCap(p,n);if(n<=0)return;p.hp-=n;float(p,'-'+n,'bad');render();await sleep(300);if(p.hp<=0)await dying(p);}
+async function loseHp(p,n){n=guardCap(p,n);if(n<=0)return;p.hp-=n;float(p,'-'+n,'bad');render();await sleep(300);despairCheck(p);if(p.hp<=0)await dying(p);}
 async function heal(p,n){if(p.hp>=p.maxHp)return;p.hp=Math.min(p.maxHp,p.hp+n);float(p,'+'+n,'good');log(`${p.g.name}回复${n}点体力，体力${p.hp}`);render();await sleep(300);}
 async function dying(p){
  const blocked=(has(opp(p),'juesha')||opp(p).xiongluanOn)&&G.cur===opp(p);if(blocked)log(`【${sk(opp(p),'juesha')}】：${p.g.name}不能使用【药】`);
@@ -119,11 +119,22 @@ async function dying(p){
  if(p.hp<=0&&has(p,'niepan')&&!p.niepanUsed&&await yesno(p,`发动【${sk(p,'niepan')}】？`,true)){p.niepanUsed=true;log(`${p.g.name}发动【${sk(p,'niepan')}】`);
   [...p.hand].forEach(c=>{p.hand=p.hand.filter(x=>x!==c);G.discard.push(c);});['weapon','armor'].forEach(s=>{if(p[s]){G.discard.push(p[s]);p[s]=null;}});p.hp=Math.min(2,p.maxHp);drawCards(p,2);}
  if(p.hp<=0&&has(p,'buqu')){p.buqu=p.buqu||[];const c=topCard();if(c){const dup=p.buqu.some(x=>x.r===c.r)||p.buqu.length>=4;p.buqu.push(c);log(`${p.g.name}【${sk(p,'buqu')}】亮出${cname(c)}${dup?'，点数重复！':'，存活'}`);if(!dup)p.hp=1;}}
- if(p.hp<=0&&!G.over)endGame(opp(p));}
-function endGame(w){G.over=true;render();if(NET){send({type:'over',win:w.i===1,name:w.g.name});}const me=w.i===0;const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');if(!AUTO){me?st.w++:st.l++;localStorage.sgStats=JSON.stringify(st);}
+ if(p.hp<=0&&!G.over){say(p,LINE.defeat(p.g),'defeat');await sleep(900);endGame(opp(p));}}
+function endGame(w){G.over=true;render();const me=w.i===0;const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');if(!AUTO&&!G.tut){me?st.w++:st.l++;localStorage.sgStats=JSON.stringify(st);}
  if(window.onGameOver)window.onGameOver(w);
  promptOpen=false;$('#prompt').classList.add('hide');closeSheets();clearFx();
- $('#over').innerHTML=`<h2>${me?'胜利！':'败北…'}</h2><p>${w.g.name} 获胜</p><p>战绩：${st.w} 胜 ${st.l} 负</p><button class="btn-primary" type="button" onclick="location.reload()">再来一局</button>`;$('#over').classList.remove('hide');resolveUser(null);}
+ const seed=G.seed||0,l=opp(w);if(NET)send({type:'over',win:w.i===1,name:w.g.name,wid:w.g.id,lid:l.g.id,seed,turn:G.turnNo});
+ if(G.tut){if(me)localStorage.sgTutDone='1';$('#over').innerHTML=overCard(me,w.g,l.g,seed,G.turnNo,me?'<p class="tut-done">教程完成！已解锁自由选将与联机大厅。</p><button class="btn-primary" type="button" onclick="location.reload()">进入大厅</button>':'<p>再试一次，按提示出牌即可。</p><button class="btn-primary" type="button" onclick="location.reload()">重开教程</button>');$('#over').classList.remove('hide');resolveUser(null);return;}
+ $('#over').innerHTML=overCard(me,w.g,l.g,seed,G.turnNo,`<p>战绩：${st.w} 胜 ${st.l} 负</p><button class="btn-primary" type="button" onclick="location.reload()">再来一局</button>`);$('#over').classList.remove('hide');resolveUser(null);}
+function overCard(me,wg,lg,seed,turn,tail){const fc=FACTIONS[wg.f]||{n:''};return `<div class="over-card f-${wg.f}"><h2>${me?'胜利！':'败北…'}</h2>${portraitImg(wg.id,wg.name)}<p class="over-who"><span class="fac">${fc.n}</span>${wg.name} 获胜</p><p class="over-report">「${LINE.report(wg,lg,seed)}」</p><p class="over-sub">${me?'此战当载入史册':'胜败乃兵家常事'} · 共 ${turn||0} 回合</p></div>${tail}`;}
+function say(p,text,kind){if(!p||!text)return;log(`${p.g.name}：「${text}」`);if(window.HARNESS)return;if(NET&&NET.role==='host')send({type:'fx',kind:'line',w:p.remote?0:1,text,cls:kind});paintLine(p,text,kind);}
+function paintLine(p,text,kind){if(window.HARNESS||!p)return;const layer=$('#fxLayer');if(!layer)return;const el=document.createElement('div');el.className='fx-line '+(kind||'')+' '+(p.i===0?'to-me':'to-ai');el.textContent=`${p.g.name}：「${text}」`;layer.appendChild(el);fxHold(layer,el,2200);}
+function despairCheck(p){if(G.over||p.despair||p.hp<=0||p.hp*3>p.maxHp)return;p.despair=true;say(p,LINE.despair(p.g),'despair');}
+async function showIntro(a,b){const ta=LINE.intro(a.g,b.g);let tb=LINE.intro(b.g,a.g);for(let i=0;i<6&&tb===ta;i++)tb=LINE.intro(b.g,a.g);log(`${a.g.name}：「${ta}」`);log(`${b.g.name}：「${tb}」`);if(window.HARNESS)return;
+ if(NET&&NET.role==='host')send({type:'fx',kind:'intro',a:b.g.id,b:a.g.id,ta:tb,tb:ta});paintIntro(a.g,b.g,ta,tb);await sleep(2300);}
+function paintIntro(me,foe,ta,tb){const app=$('#app');if(!app)return;const old=$('#introBox');if(old)old.remove();const el=document.createElement('div');el.id='introBox';el.className='intro';
+ el.innerHTML=`<div class="intro-side foe f-${foe.f}">${portraitImg(foe.id,foe.name)}<p><b>${foe.name}</b>「${tb}」</p></div><div class="intro-vs">VS</div><div class="intro-side me f-${me.f}">${portraitImg(me.id,me.name)}<p><b>${me.name}</b>「${ta}」</p></div>`;
+ app.appendChild(el);el.onclick=()=>el.remove();setTimeout(()=>{if(el.parentNode)el.remove();},2300);}
 
 // ---- 出牌 ----
 function canPlay(p,c){const k=c.k;
@@ -137,7 +148,7 @@ function canPlay(p,c){const k=c.k;
 function canZhan(p){return !p.noZhan&&p.zhanUsed<zhanLimit(p);}
 function zhanLimit(p){if(p.weapon&&p.weapon.k==='liannu')return 99;return (has(p,'baohe')?2:1)+(p.extraZhan||0);}
 const BLACK_IMMUNE=(t,c)=>has(t,'weimu')&&c&&!isRed(c)&&CARD_DEFS[c.k].type==='trick';
-async function playCard(p,c,as){if(G.over)return;const t=opp(p);removeCard(p,c);const k=as||c.k,D=CARD_DEFS[k];
+async function playCard(p,c,as){if(G.over)return;const t=opp(p);removeCard(p,c);const k=as||c.k,D=CARD_DEFS[k];if(G.tut&&!p.ai&&(k==='zhan'||k==='huozhan'))G.tut.zhan=true;
  log(`${p.g.name}使用${cname(c)}${as?`当【${D.n}】`:''}`);fxCard(p,c,k,false);render();await sleep(300);p.usedCnt=(p.usedCnt||0)+1;if(D.type==='trick')p.trickUsed=true;
  if(has(p,'jiang')&&((k==='zhan'&&isRed(c))||k==='dantiao')){log(`${p.g.name}【${sk(p,'jiang')}】摸1张`);drawCards(p,1);}
  if(D.type==='weapon'||D.type==='armor'){const slot=D.type;if(p[slot])G.discard.push(p[slot]);G.discard=G.discard.filter(x=>x!==c);p[slot]=c;if(has(p,'xiaoji')){log(`${p.g.name}发动【${sk(p,'xiaoji')}】`);drawCards(p,2);}render();return;}
@@ -232,7 +243,7 @@ const GONGXIN={n:'攻心',k:'gongxin',active:true,t:'出牌阶段限一次：观
 const ZHANXING={n:'占星',k:'zhanxing',t:'摸牌阶段开始时，观看牌堆顶3张牌，可以将其中任意1张置于牌堆底。'};
 function activeOf(p){const s=skillsOf(p).find(s=>s.active);return s?{s,a:ACTIVES[s.k]}:null;}
 function usedUp(p,act){if(act.a.limited)return !!(p.limitUsed||{})[act.s.k];return ((p.used||{})[act.s.k]||0)>=(act.a.times||1);}
-function markUsed(p,act){p.used=p.used||{};p.used[act.s.k]=(p.used[act.s.k]||0)+1;if(act.a.limited){p.limitUsed=p.limitUsed||{};p.limitUsed[act.s.k]=true;}}
+function markUsed(p,act){if(G.tut&&!p.ai)G.tut.skill=true;p.used=p.used||{};p.used[act.s.k]=(p.used[act.s.k]||0)+1;if(act.a.limited){p.limitUsed=p.limitUsed||{};p.limitUsed[act.s.k]=true;}}
 function validSel(act,cs){if(act.a.needAny?cs.length<1:cs.length!==act.a.need)return false;if(act.a.filter&&!cs.every(act.a.filter))return false;if(act.a.valid&&!act.a.valid(cs))return false;return true;}
 
 // ---- 第二批武将钩子 ----
@@ -512,7 +523,7 @@ function render(){if(!G.P)return;if(window.HARNESS){for(const p of G.P)if(p.hand
    else el.onclick=()=>{playSel=c;render();};}
   if(G.phase==='discard'||G.phase==='skill'){const okc=!G.selFilter||G.selFilter(c);if(okc)el.classList.add('ok');if(G.sel.includes(c))el.classList.add('sel');el.onclick=()=>{if(!okc)return;G.sel.includes(c)?G.sel=G.sel.filter(x=>x!==c):G.sel.length<G.needSel&&G.sel.push(c);render();};}
   hand.appendChild(el);}layoutHand(hand);
- const bar=$('#actions');bar.innerHTML='';
+ const bar=$('#actions');bar.innerHTML='';tutTip(me);
  syncExit();
  if(G.over)return;
  const btn=(t,fn,dis,primary=true)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.disabled=!!dis;b.className=primary?'btn-primary':'btn-secondary';b.onclick=fn;bar.appendChild(b);};
@@ -550,14 +561,14 @@ function onMsg(m){
  // guest
  if(m.type==='offer'){$('#lobby').innerHTML='已连接！从下面 8 位武将中选择出战。';selectScreen(m.ids);}
  if(m.type==='log')log(m.t);
- if(m.type==='fx'){if(m.kind==='card'){const p=G.P&&G.P[m.w];if(p)paintFxCard(p,m.key,m.suit,!!m.red,!!m.faceDown);}else if(m.kind==='skill')paintSkill(m.name);else{const p=G.P&&G.P[m.w];if(p)paintFloat(p,m.txt,m.cls);}}
+ if(m.type==='fx'){if(m.kind==='card'){const p=G.P&&G.P[m.w];if(p)paintFxCard(p,m.key,m.suit,!!m.red,!!m.faceDown);}else if(m.kind==='skill')paintSkill(m.name);else if(m.kind==='intro'){const a=GENERALS.find(g=>g.id===m.a),b=GENERALS.find(g=>g.id===m.b);if(a&&b)paintIntro(a,b,m.ta,m.tb);}else if(m.kind==='line'){const p=G.P&&G.P[m.w];if(p)paintLine(p,m.text,m.cls);}else{const p=G.P&&G.P[m.w];if(p)paintFloat(p,m.txt,m.cls);}}
  if(m.type==='state'){$('#select').classList.add('hide');$('#detail').classList.add('hide');$('#battle').classList.remove('hide');
   const P=m.P.map(v=>({...v,g:GENERALS.find(g=>g.id===v.id),hand:Array.isArray(v.hand)?v.hand:Array.from({length:v.hand},()=>({}))}));
   if(G.phase!==m.phase||m.phase==='play'){G.sel=G.phase===m.phase?G.sel||[]:[];}
   if(G.phase==='skill'&&m.phase==='play'){}else G.phase=m.phase;
   Object.assign(G,{P,cur:P[m.cur]||null,needSel:m.need,deck:{length:m.deck},discard:{length:m.disc},over:m.over,turnNo:m.turnNo||0});if(!G.sel)G.sel=[];render();}
  if(m.type==='ask')showPrompt(m.msg,m.opts,val=>send({type:'act',t:'ans',val}));
- if(m.type==='over'){G.over=true;render();promptOpen=false;$('#prompt').classList.add('hide');closeSheets();clearFx();$('#over').innerHTML=`<h2>${m.win?'胜利！':'败北…'}</h2><p>${m.name} 获胜</p><p>想再战请让房主新建房间</p><button class="btn-primary" type="button" onclick="location.href=location.pathname">返回首页</button>`;$('#over').classList.remove('hide');}
+ if(m.type==='over'){G.over=true;render();promptOpen=false;$('#prompt').classList.add('hide');closeSheets();clearFx();const wg=GENERALS.find(g=>g.id===m.wid),lg=GENERALS.find(g=>g.id===m.lid);$('#over').innerHTML=(wg&&lg?overCard(m.win,wg,lg,m.seed,m.turn,''):`<h2>${m.win?'胜利！':'败北…'}</h2><p>${m.name} 获胜</p>`)+`<p>想再战请让房主新建房间</p><button class="btn-primary" type="button" onclick="location.href=location.pathname">返回首页</button>`;$('#over').classList.remove('hide');}
 }
 function setupConn(conn){NET.conn=conn;conn.on('data',onMsg);conn.on('close',()=>{if(!G.over)alert('对手已断开连接');});}
 function newCode(){return Math.random().toString(36).slice(2,8).toUpperCase();}
@@ -577,6 +588,20 @@ function joinRoom(code){if(typeof Peer==='undefined'){alert('联机组件加载�
  peer.on('open',()=>{const conn=peer.connect('sgduel-'+code,{reliable:true});setupConn(conn);});}
 function tryStartNet(){if(NET.myPick&&NET.guestPick)start(NET.myPick,NET.guestPick,true);else if(NET.myPick)$('#lobby').innerHTML='已选择，等待对手选将…';}
 
+// ---- 首胜教程 ----
+const TUT_ME='caocao',TUT_AI='xuchu';
+function tutDone(){try{return localStorage.sgTutDone==='1';}catch(e){return true;}}
+function tutDeal(){const [me,ai]=G.P;ai.hp=ai.maxHp=3;const take=k=>{const i=G.deck.findIndex(c=>c.k===k);return i<0?topCard():G.deck.splice(i,1)[0];};
+ ['zhan','zhan','bi','yao'].forEach(k=>me.hand.push(take(k)));['zhan','zhan','yao'].forEach(k=>ai.hand.push(take(k)));
+ for(let i=0;i<4;i++){const j=G.deck.findIndex(c=>c.k==='zhan');if(j>=0)G.deck.push(G.deck.splice(j,1)[0]);}
+ log('【教程】跟着底部提示：出【斩】、用【避】、发动技能，再把许褚打到0体力即可通关。');render();}
+function tutTip(me){const el=$('#tutTip');if(!el)return;const T=G.tut;if(!T||G.over){el.classList.add('hide');return;}el.classList.remove('hide');
+ let t;if(G.cur===me&&G.phase==='play'){if(!T.zhan&&me.zhanUsed===0&&me.hand.some(c=>c.k==='zhan'))t='教程 ①：点选一张【斩】，再点「确认打出」（或上滑）攻击对方';
+  else if(!T.skill)t='教程 ②：点底部「技能·挟令」发动曹操的技能';else if(!T.bi)t='教程：点「结束出牌」，等对方出【斩】时打出【避】';else t='教程：继续进攻，把许褚体力打到 0 即可通关';}
+ else if(G.phase==='skill')t='教程：确认发动技能';else if(G.phase==='discard')t='教程：手牌超过上限，选牌弃掉';
+ else t=T.bi?'教程：对方回合，稍候…':'教程 ③：对方出【斩】时，选择打出【避】抵消';
+ el.textContent=t+`（斩${T.zhan?'✓':'·'} 避${T.bi?'✓':'·'} 技能${T.skill?'✓':'·'}）`;}
+function startTutorial(){closeSheets();const g=GENERALS.find(x=>x.id===TUT_ME),a=GENERALS.find(x=>x.id===TUT_AI);start(g,a,false,true);}
 // ---- 选将 ----
 let OFFER=[],PICK=null;
 function fillSlot(g){PICK=g;const body=$('#picked-body'),btn=$('#confirm'),detail=$('#detailOpen');
@@ -601,14 +626,15 @@ function showDetail(g){if(!g)return;const d=$('#detail');const fc=FACTIONS[g.f];
  openSheet(d,null,$('#detailOpen'));
  d.innerHTML=`<button id="cl" class="btn-on-paper" type="button">关闭</button>${portraitImg(g.id,g.name)}<h3>${fc.n}·${g.name}</h3><p>体力 ${g.hp}</p>${g.skills.map(s=>`<p><b>【${s.n}】</b>${s.t}</p>`).join('')}`;
  const btn=$('#cl');if(btn)btn.onclick=()=>dismissSheet();focusEl(btn);}
-async function start(g,ag,net){
+async function start(g,ag,net,tut){
  $('#select').classList.add('hide');$('#battle').classList.remove('hide');
  const mk=(i,gg,ai)=>({i,g:gg,ai,hp:gg.hp,maxHp:gg.hp,hand:[],weapon:null,armor:null,zhanUsed:0,used:{},gained:[]});
- Object.assign(G,{deck:buildDeck(),discard:[],P:[mk(0,g,AUTO),mk(1,ag,!net)],over:false,turnNo:0,phase:'',sel:[]});
+ Object.assign(G,{deck:buildDeck(),discard:[],P:[mk(0,g,AUTO),mk(1,ag,!net)],over:false,turnNo:0,phase:'',sel:[],seed:Math.random()*1e6|0,tut:tut?{zhan:false,bi:false,skill:false}:null});
  if(net)G.P[1].remote=true;
  log(net?`房主选择了${g.name}，对手选择了${ag.name}`:`你选择了${g.name}，AI 选择了${ag.name}`);
- G.P.forEach(p=>{drawCards(p,4);if(has(p,'huanshen'))gainSafe(p);});
- let cur=Math.random()<.5?0:1;log(`${G.P[cur].g.name} 先手`);
+ await showIntro(G.P[0],G.P[1]);
+ if(tut)tutDeal();else G.P.forEach(p=>{drawCards(p,4);if(has(p,'huanshen'))gainSafe(p);});
+ let cur=tut?0:Math.random()<.5?0:1;log(`${G.P[cur].g.name} 先手`);
  while(!G.over){await turn(G.P[cur]);cur=1-cur;}}
 function initLobby(){const room=new URLSearchParams(location.search).get('room');
  $('#pve').onclick=()=>{closeSheets();selectScreen();};$('#host').onclick=()=>{$('#modes').classList.add('hide');hostRoom();};
@@ -622,7 +648,8 @@ function initLobby(){const room=new URLSearchParams(location.search).get('room')
  $('#me').onclick=()=>{if(!promptOpen&&G.P)showSkill(0);};
  $('#ai').onclick=()=>{if(!promptOpen&&G.P)showSkill(1);};
  $('#logOpen').onclick=toggleLog;$('#scrim').onclick=onScrim;
- if(room)joinRoom(room.toUpperCase());}
+ if(room){joinRoom(room.toUpperCase());return;}
+ if(!window.HARNESS&&!/auto/.test(location.search)&&!tutDone()){$('#pve').textContent='首胜教程（约 3 分钟）';$('#pve').onclick=startTutorial;$('#host').classList.add('hide');$('#selectTitle').textContent='新手请先完成首胜教程';}}
 $('#ruleBox').innerHTML='<h3>规则</h3><p>回合：摸2张 → 出牌 → 弃牌至手牌上限（=当前体力）。把对方体力打到0即获胜。双方起手4张。</p><p><b>花色与判定</b>：每张牌有花色（♠♥♣♦）与点数（A–K），判定=亮出牌堆顶一张牌；拼点=双方各出一张手牌比点数。</p><p><b>护体</b>：回合开始时对方体力全满，则本回合无法将其击杀（至多打到1）。</p><p><b>兵疲</b>：第21回合起，每名角色回合开始时失去1点体力。</p>'+Object.values(CARD_DEFS).map(d=>`<p><b>【${d.n}】</b>×${d.cnt} ${d.t}</p>`).join('');
 initLobby();
 const AUTO=/auto/.test(location.search);if(AUTO&&!window.HARNESS){window.onerror=e=>document.title="ERR "+e;window.onunhandledrejection=e=>document.title="ERR "+(e.reason&&e.reason.stack||e.reason);window.onGameOver=w=>{if(!/^ERR/.test(document.title))document.title="OVER "+w.g.id+" T"+G.turnNo;};{const g=GENERALS[+(location.search.split("g=")[1]||0)];const pool=GENERALS.filter(x=>x!==g);start(g,pool[Math.random()*pool.length|0],false);}}
