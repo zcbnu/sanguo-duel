@@ -501,3 +501,23 @@ button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 @keyframes fx-pip-trick{to{transform:translate(var(--tx,0px),var(--ty,0px)); opacity:0}}
 @keyframes fx-pip-equip{to{transform:translateY(24px); opacity:0}}
 @keyframes fx-skill{to{transform:translate(-50%,calc(-50% - 12px)); opacity:0}}
+/* ---- 叙事：开场白 / 台词 / 名场面卡 / 教程 ---- */
+.intro{position:fixed; inset:0; z-index:60; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; padding:20px; background:rgba(10,6,4,.88); animation:introIn .3s ease-out}
+.intro-side{display:flex; align-items:center; gap:12px; width:100%; max-width:420px; color:var(--paper)}
+.intro-side.me{flex-direction:row-reverse; text-align:right}
+.intro-side img{width:84px; height:84px; object-fit:cover; object-position:center 20%; border:2px solid var(--gold-line); border-radius:6px}
+.intro-side p{margin:0; font-size:15px; line-height:1.5}
+.intro-side b{display:block; color:var(--gold); font-size:17px; letter-spacing:.1em}
+.intro-vs{font-size:34px; font-weight:900; color:var(--vermillion,#c0392b); letter-spacing:.2em; text-shadow:0 2px 0 #000}
+@keyframes introIn{from{opacity:0}to{opacity:1}}
+.fx-line{position:absolute; left:8px; right:8px; padding:6px 10px; border-radius:6px; background:rgba(20,12,8,.9); border:1px solid var(--gold-line); color:var(--paper); font-size:14px; text-align:center; animation:introIn .25s ease-out; z-index:5}
+.fx-line.to-me{bottom:6px}.fx-line.to-ai{top:6px}
+.fx-line.defeat{border-color:#8a8a8a; color:#cfc6b4}
+.tut-tip{margin:4px 8px; padding:6px 10px; border-radius:6px; background:rgba(226,194,122,.15); border:1px dashed var(--gold-line); color:var(--gold); font-size:13px; line-height:1.4}
+.tut-tip.hide{display:none}
+.over-card{text-align:center; padding:8px 4px 12px; border-bottom:2px solid var(--paper-ink); margin-bottom:10px}
+.modal .over-card img{width:140px; height:140px}
+.over-card .over-who,.over-card .over-report,.over-card .over-sub{text-align:center; margin:6px 0}
+.over-report{font-size:18px; font-weight:700; letter-spacing:.06em}
+.over-sub{font-size:12px; opacity:.75}
+.tut-done{font-weight:700}
