@@ -17,6 +17,8 @@
       <div id="modes">
         <button id="pve" class="btn-primary" type="button">人机对战（换一批武将）</button>
         <button id="host" class="btn-primary" type="button">创建联机房间</button>
+        <button id="dailyBtn" class="btn-secondary" type="button">每日一战</button>
+        <button id="puzzleBtn" class="btn-secondary" type="button">残局挑战</button>
       </div>
       <div id="lobby"></div>
       <div class="lobby-tools">
@@ -72,6 +74,10 @@
     <button id="statsClose" class="btn-on-paper" type="button">关闭</button>
     <div id="stats"></div>
   </div>
+  <div id="puzzleSheet" class="sheet hide">
+    <button id="puzzleClose" class="btn-on-paper" type="button">关闭</button>
+    <div id="puzzleBody"></div>
+  </div>
   <div id="detail" class="modal sheet hide"></div>
   <div id="skillSheet" class="sheet hide">
     <button id="skillClose" class="btn-on-paper" type="button">关闭</button>
@@ -89,6 +95,7 @@
 <script src="data/generals.js"></script>
 <script src="data/cards.js"></script>
 <script src="data/lines.js"></script>
+<script src="data/modes.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
