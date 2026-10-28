@@ -571,6 +571,8 @@ function showPrompt(msg,opts,onChoose){closeSheets();promptOpen=true;const box=$
 function commitPlay(c){if(playCommit||!c)return;playCommit=true;const bar=$('#actions');if(bar&&bar.children&&typeof bar.children.length==='number'){for(const b of bar.children)if(b&&b.tagName==='BUTTON')b.disabled=true;}const guest=!!(NET&&NET.role==='guest');const waiting=!!pending;resolveUser({t:'card',c});if(!guest&&!waiting)playCommit=false;}
 function bindPlaySwipe(el,c){let sx=0,sy=0,scrolling=false,pid=null;el.onpointerdown=e=>{if(playCommit||e.isPrimary===false)return;if(typeof e.button==='number'&&e.button!==0)return;sx=e.clientX;sy=e.clientY;scrolling=false;pid=e.pointerId;if(typeof el.setPointerCapture==='function'&&e.pointerId!=null){try{el.setPointerCapture(e.pointerId);}catch(err){}}};el.onpointermove=e=>{if(pid==null||e.pointerId!==pid||playCommit)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy))scrolling=true;};el.onpointerup=e=>{if(pid==null||e.pointerId!==pid||playCommit)return;pid=null;const dx=e.clientX-sx,dy=e.clientY-sy;if(scrolling)return;if(Math.hypot(dx,dy)<10){playSel=null;render();return;}if(dy<=-48&&Math.abs(dx)<=24&&Math.abs(dy)>Math.abs(dx)){el.onpointerdown=el.onpointermove=el.onpointerup=el.onpointercancel=null;commitPlay(c);}};el.onpointercancel=e=>{if(pid==null||e.pointerId===pid)pid=null;};}
 function copyRoomLink(){const input=$('#rl');const text=input&&input.value||'';const done=ok=>{const cp=$('#cp');if(!cp)return;if(ok){cp.textContent='已复制';return;}cp.textContent='复制失败，请长按链接';if(input&&typeof input.focus==='function')input.focus();if(input&&typeof input.select==='function')input.select();};const fallback=()=>{if(input&&typeof input.focus==='function')input.focus();if(input&&typeof input.select==='function')input.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){ok=false;}done(!!ok);};if(navigator.clipboard&&window.isSecureContext&&typeof navigator.clipboard.writeText==='function'){try{navigator.clipboard.writeText(text).then(()=>done(true),fallback);}catch(e){fallback();}return;}fallback();}
+const TYPE_CN={basic:'基本',trick:'锦囊',weapon:'武器',armor:'防具'};let peekCard=null;
+function showCardDetail(c){const box=$('#cardDetail');if(!box)return;if(!c){box.classList.add('hide');box.innerHTML='';return;}const D=CARD_DEFS[c.k];box.className='card-detail t-'+D.type;box.innerHTML=`<span class="ctag">${TYPE_CN[D.type]||''}</span><b>【${D.n}】</b><i class="suit ${isRed(c)?'red':''}">${cs(c)}</i><span class="dtext">${D.t}</span>`;}
 function layoutHand(hand){const n=hand.children.length;hand.classList.remove('hand-overlap');hand.style.setProperty('--cols',String(Math.max(4,Math.ceil(n/2))));}
 function render(){if(!G.P)return;if(window.HARNESS){for(const p of G.P)if(p.hand.some(c=>!c))throw new Error('undef card '+p.g.id+' '+new Error().stack);}if(NET&&NET.role==='host'&&G.P[1].remote)send(snap());const [me,ai]=G.P;
  $('#ai').innerHTML=seat(ai);$('#me').innerHTML=seat(me);syncSkillSheet();
@@ -579,12 +581,13 @@ function render(){if(!G.P)return;if(window.HARNESS){for(const p of G.P)if(p.hand
  const localPlay=G.phase==='play'&&G.cur===me;
  if(!localPlay||!playSel||!me.hand.includes(playSel)||!canPlay(me,playSel)){playSel=null;playCommit=false;}
  const hand=$('#hand');hand.innerHTML='';
- for(const c of me.hand){const D=CARD_DEFS[c.k];const el=document.createElement('div');el.className=`card ${D.type} k-${c.k}`;el.innerHTML=`<b>${D.n}</b><i class="suit ${isRed(c)?'red':''}">${cs(c)}</i><small>${D.t}</small>`;el.title=D.t;
+ for(const c of me.hand){const D=CARD_DEFS[c.k];const el=document.createElement('div');el.className=`card ${D.type} k-${c.k}${peekCard===c?' peek':''}`;el.innerHTML=`<span class="ctag">${TYPE_CN[D.type]||''}</span><b>${D.n}</b><i class="suit ${isRed(c)?'red':''}">${cs(c)}</i><small>${D.t}</small>`;el.title=D.t;el.onclick=()=>{peekCard=peekCard===c?null:c;render();};
   if(localPlay&&canPlay(me,c)){el.classList.add('ok');
-   if(playSel===c){el.classList.add('sel');if(el.style)el.style.touchAction='none';bindPlaySwipe(el,c);}
-   else el.onclick=()=>{playSel=c;render();};}
+   if(playSel===c){el.classList.add('sel');if(el.style)el.style.touchAction='none';bindPlaySwipe(el,c);el.onclick=null;}
+   else el.onclick=()=>{playSel=c;peekCard=c;render();};}
   if(G.phase==='discard'||G.phase==='skill'){const okc=!G.selFilter||G.selFilter(c);if(okc)el.classList.add('ok');if(G.sel.includes(c))el.classList.add('sel');el.onclick=()=>{if(!okc)return;G.sel.includes(c)?G.sel=G.sel.filter(x=>x!==c):G.sel.length<G.needSel&&G.sel.push(c);render();};}
   hand.appendChild(el);}layoutHand(hand);
+ {const fc=(playSel&&me.hand.includes(playSel)&&playSel)||(G.sel&&G.sel.length&&me.hand.includes(G.sel[G.sel.length-1])&&G.sel[G.sel.length-1])||(me.hand.includes(peekCard)&&peekCard);if(!fc)peekCard=null;showCardDetail(fc);}
  const bar=$('#actions');bar.innerHTML='';tutTip(me);
  syncExit();
  if(G.over)return;
