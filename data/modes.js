@@ -8,8 +8,9 @@ window.PUZZLES = [
   goal:'1 回合内击败曹仁。提示：连珠弩让【斩】不限次数；【裂天】要两张【避】才能抵消。对方还藏着一张【药】。'},
  {id:4,name:'破阵赤锋',me:'guanyu',ai:'xiahoudun',aiHp:2,limit:1,hand:['pozhen:spade','zhan:heart','zhan:diamond'],aiHand:['bi:club'],
   goal:'1 回合内击败夏侯惇。提示：先【破阵】拆掉对方手里的【避】；【赤锋】每回合第一张红【斩】不计次数。'},
- {id:5,name:'枭姬长枪',me:'sunshangxiang',ai:'lvbu',meHp:3,aiHp:3,limit:3,hand:['changqiang:diamond','jianyu:heart','zhan:heart','bi:diamond','yao:heart'],aiHand:['zhan:spade','zhan:club','bi:spade'],
-  goal:'3 回合内击败吕布，且自己存活。提示：装备会触发【枭姬】摸 2 张；吕布的【斩】需要两张【避】。'},
+ {id:5,name:'枭姬长枪',me:'sunshangxiang',ai:'lvbu',meHp:3,aiHp:2,limit:2,hand:['changqiang:diamond','jianyu:heart','zhan:heart','bi:diamond','yao:heart'],aiHand:['zhan:spade','zhan:club','bi:spade'],
+  deckTop:['zhan:heart','bi:heart','zhan:diamond','yao:diamond','bi:club','zhan:club','zhan:spade','zhan:heart','zhan:spade','bi:heart','zhan:diamond','bi:club'],
+  goal:'2 回合内击败吕布，且自己存活。提示：装上【长枪】触发【枭姬】摸 2 张；先用【箭雨】逼出吕布的【避】，再出【斩】。吕布的【斩】需要两张【避】。'},
 ];
 window.SEEDRNG = function(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};};
 // 每日：本地日期 YYYYMMDD 为种子（用户时区），同日同池同对手同牌序

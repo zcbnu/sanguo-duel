@@ -190,7 +190,7 @@ async function aoe(p,t,k){if(t.armor&&t.armor.k==='tiejia'){log(`${t.g.name}的�
  if((k==='jianyu'&&has(t,'juxiang'))||(k==='fenghuo'&&has(t,'huoshou'))){log(`${t.g.name}【${sk(t,k==='jianyu'?'juxiang':'huoshou')}】：无效`);return;}
  if(has(t,'yuguan')&&t.hand.length){randDiscard(t,'因【御关】');return;}
  const need=k==='jianyu'?'bi':'zhan';const ok=await respond(t,need,`对方对你使用【${cn(k)}】，${k==='jianyu'?'打出':'弃置'}【${cn(need)}】抵消？`);
- if(!ok&&k==='jianyu'&&t.hand.length>=2){const two=aiDiscardOrder(t).slice(0,2);if(await yesno(t,'【箭雨】弃置2张手牌抵消？（否则受到1点伤害）',t.hp<=2||VAL[two[1].k]<=6)){const cs=t.ai?two:[await pickCard(t,'弃置第1张',t.hand,two[0])];if(!t.ai){const rest=t.hand.filter(x=>x!==cs[0]);cs.push(await pickCard(t,'弃置第2张',rest,rest[0]));}cs.forEach(x=>removeCard(t,x));log(`${t.g.name}弃置2张手牌抵消【箭雨】`);render();return;}}
+ if(!ok&&k==='jianyu'&&t.hand.length>=2&&!(G.mode&&G.mode.type==='puzzle')&&!G.tut){const two=aiDiscardOrder(t).slice(0,2);if(await yesno(t,'【箭雨】弃置2张手牌抵消？（否则受到1点伤害）',t.hp<=2||VAL[two[1].k]<=6)){const cs=t.ai?two:[await pickCard(t,'弃置第1张',t.hand,two[0])];if(!t.ai){const rest=t.hand.filter(x=>x!==cs[0]);cs.push(await pickCard(t,'弃置第2张',rest,rest[0]));}cs.forEach(x=>removeCard(t,x));log(`${t.g.name}弃置2张手牌抵消【箭雨】`);render();return;}}
  if(!ok)await damage(p,t,1,cn(k));}
 async function doZhan(p,t,card){
  await zyChoice(p,t);
@@ -694,7 +694,7 @@ function azCheck(p,k){if(!k||!p||p.az!==k||p.azDone||G.over)return;p.azDone=true
 function pzProg(){return +(localStorage.sgPuzzle||0);}
 function mkCard(spec){const [k,s]=spec.split(':');return {id:uid++,k,s:s||'spade',r:1+(Math.random()*13|0)};}
 function puzzleDeal(pz){const [me,ai]=G.P;if(pz.meHp)me.hp=pz.meHp;ai.hp=pz.aiHp||ai.hp;me.hand=pz.hand.map(mkCard);ai.hand=pz.aiHand.map(mkCard);
- if(pz.weapon)me.weapon=mkCard(pz.weapon);if(pz.armor)me.armor=mkCard(pz.armor);if(pz.aiArmor)ai.armor=mkCard(pz.aiArmor);
+ if(pz.deckTop)pz.deckTop.slice().reverse().forEach(x=>G.deck.push(mkCard(x)));if(pz.weapon)me.weapon=mkCard(pz.weapon);if(pz.armor)me.armor=mkCard(pz.armor);if(pz.aiArmor)ai.armor=mkCard(pz.aiArmor);
  log(`【残局${pz.id}·${pz.name}】${pz.goal}`);render();}
 function puzzleResult(me){const pz=G.mode.pz;const why=G.timeUp?`超过 ${pz.limit} 回合`:me?'':'你被击败';let t;
  if(me){if(pzProg()<pz.id)localStorage.sgPuzzle=pz.id;t=`<p class="tut-done">残局 ${pz.id}「${pz.name}」通关！${pz.id<PUZZLES.length?'已解锁下一关。':'全部 5 关已通关！'}</p>`;}
@@ -769,6 +769,6 @@ function initLobby(){const sp=new URLSearchParams(location.search),room=normCode
  if(room){joinRoom(room);return;}
  if(!window.HARNESS&&!/auto/.test(location.search)&&!tutDone()){$('#pve').textContent='首胜教程（约 3 分钟）';$('#pve').onclick=startTutorial;$('#host').classList.add('hide');$('#joinRow').classList.add('hide');$('#puzzleBtn').classList.add('hide');$('#dailyBtn').classList.add('hide');$('#selectTitle').textContent='新手请先完成首胜教程';return;}
  const q=new URLSearchParams(location.search);setTimeout(()=>{if(q.get('pz'))startPuzzle(+q.get('pz'));else if(q.get('daily'))openDaily();},0);}
-$('#ruleBox').innerHTML='<h3>规则</h3><p>回合：摸2张 → 出牌 → 弃牌至手牌上限（=当前体力）。把对方体力打到0即获胜。双方起手4张。</p><p><b>花色与判定</b>：每张牌有花色（♠♥♣♦）与点数（A–K），判定=亮出牌堆顶一张牌；拼点=双方各出一张手牌比点数。</p><p><b>护体</b>：回合开始时对方体力全满，则本回合无法将其击杀（至多打到1）。</p><p><b>兵疲</b>：第21回合起，每名角色回合开始时失去1点体力。</p>'+Object.values(CARD_DEFS).map(d=>`<p><b>【${d.n}】</b>×${d.cnt} ${d.t}</p>`).join('');
+$('#ruleBox').innerHTML='<h3>规则</h3><p>回合：摸2张 → 出牌 → 弃牌至手牌上限（=当前体力+1）。把对方体力打到0即获胜。双方起手4张。</p><p><b>花色与判定</b>：每张牌有花色（♠♥♣♦）与点数（A–K），判定=亮出牌堆顶一张牌；拼点=双方各出一张手牌比点数。</p><p><b>护体</b>：回合开始时对方体力全满，则本回合无法将其击杀（至多打到1）。</p><p><b>兵疲</b>：第21回合起，每名角色回合开始时失去1点体力。</p>'+Object.values(CARD_DEFS).map(d=>`<p><b>【${d.n}】</b>×${d.cnt} ${d.t}</p>`).join('');
 initLobby();
 const AUTO=/auto/.test(location.search);if(AUTO&&!window.HARNESS){window.onerror=e=>document.title="ERR "+e;window.onunhandledrejection=e=>document.title="ERR "+(e.reason&&e.reason.stack||e.reason);window.onGameOver=w=>{if(!/^ERR/.test(document.title))document.title="OVER "+w.g.id+" T"+G.turnNo;};{const g=GENERALS[+(location.search.split("g=")[1]||0)];const pool=GENERALS.filter(x=>x!==g);start(g,pool[Math.random()*pool.length|0],false);}}
