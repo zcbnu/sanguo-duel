@@ -65,7 +65,7 @@ window.GENERALS = [
 
  {id:'guanxing',name:'关兴',f:'shu',hp:4,tier:2,skills:[{n:'承武',k:'chengwu',t:'回合开始时进行判定：红色，本回合可多使用一张【斩】；黑色，摸1张牌。'}]},
  {id:'zhangbao',name:'张苞',f:'shu',hp:5,tier:2,skills:[{n:'父魄',k:'fupo',active:true,t:'出牌阶段限一次：你可以将一张手牌当【斩】使用；此【斩】造成伤害后，本回合你的【斩】次数+1。'}]},
- {id:'guanping',name:'关平',f:'shu',hp:4,tier:2,skills:[{n:'龙吟',k:'longyin',t:'你的【斩】造成伤害后，摸1张牌且此【斩】不计入次数。'}]},
+ {id:'guanping',name:'关平',f:'shu',hp:4,tier:2,skills:[{n:'龙吟',k:'longyin',t:'每回合限一次，你的【斩】造成伤害后，摸1张牌且此【斩】不计入次数。'}]},
  {id:'madai',name:'马岱',f:'shu',hp:3,tier:2,skills:[{n:'潜袭',k:'qianxi',t:'回合开始时进行判定，若为黑色，对方随机弃置1张手牌。'}]},
  {id:'wangping',name:'王平',f:'shu',hp:4,tier:2,skills:[{n:'拒营',k:'juying',t:'回合结束时，若你本回合未使用【斩】，你获得1层“营”（至多1层）；下次受到伤害时移去营并使伤害-1。'},{n:'飞军',k:'feijun',active:true,t:'出牌阶段限一次：弃1张牌，令手牌不少于你的对方随机弃1张；否则破坏其一件装备。'}]},
  {id:'maliang',name:'马良',f:'shu',hp:3,tier:2,skills:[{n:'协穆',k:'xiemu',t:'你受到【斩】的伤害后摸1张牌。'},{n:'精策',k:'jingce',t:'回合结束时，若你本回合使用的牌数不少于体力值，摸1张牌。'}]},

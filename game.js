@@ -22,7 +22,7 @@ function drawCards(p,n){for(let i=0;i<n;i++){const c=topCard();if(!c)break;p.han
 function afterLose(p){if(has(p,'lianying')&&!p.hand.length&&!p.lyBusy){p.lyBusy=true;log(`${p.g.name}发动【${sk(p,'lianying')}】`);drawCards(p,1);p.lyBusy=false;}}
 function removeCard(p,c){p.hand=p.hand.filter(x=>x!==c);G.discard.push(c);afterLose(p);}
 function randDiscard(p,why){if(!p.hand.length)return;const c=p.hand[Math.random()*p.hand.length|0];removeCard(p,c);log(`${p.g.name}${why||''}弃置了${cname(c)}`);}
-function handLimit(p){return Math.max(0,p.hp+1)+(has(p,'yinren')?2:0)+(has(p,'jiancheng')?2:0)+(has(p,'songwei')?2:0)+(has(p,'xueyi')?2:0)+(has(p,'tunken')?Math.min(2,p.tian||0):0)+(p.quan||0)-(p.wzMinus||0);}
+function handLimit(p){return Math.max(0,p.hp+1)+(has(p,'yinren')?2:0)+(has(p,'jiancheng')?2:0)+(has(p,'songwei')?1:0)+(has(p,'xueyi')?2:0)+(has(p,'tunken')?Math.min(2,p.tian||0):0)+(p.quan||0)-(p.wzMinus||0);}
 // 特效都挂在 #fxLayer。座位重绘不碰这一层。超过 12 个子节点时先去掉最旧的一个。
 function fxTrim(layer){if(layer.childNodes.length>12)layer.removeChild(layer.firstChild);}
 function fxHold(layer,node,ms){setTimeout(()=>{if(node.parentNode===layer)node.remove();},ms);}
@@ -101,7 +101,7 @@ async function damage(src,t,n,why,card){
  if(has(t,'jieming')){log(`${t.g.name}发动【${sk(t,'jieming')}】`);drawCards(t,t.hand.length<t.hp?2:1);}
  if(has(t,'yisuan')){log(`${t.g.name}发动【${sk(t,'yisuan')}】`);drawCards(t,n+1);}
  if(s&&has(t,'yingshi')&&s.hand.length){log(`${t.g.name}发动【${sk(t,'yingshi')}】`);steal(t,s);}
- if(s&&has(t,'fangzhu')){log(`${t.g.name}发动【${sk(t,'fangzhu')}】`);s.drawMinus=(s.drawMinus||0)+2;}
+ if(s&&has(t,'fangzhu')){log(`${t.g.name}发动【${sk(t,'fangzhu')}】`);s.drawMinus=(s.drawMinus||0)+1;}
  if(s&&has(t,'enyuan')){const give=s.hand.length?await yesno(s,`【${sk(t,'enyuan')}】交给${t.g.name}一张手牌？（否则失去1点体力）`,s.hp<=2||s.hand.length>=3):false;
   if(give){const c=s.ai?aiDiscardOrder(s)[0]:await pickCard(s,'交出哪张？',s.hand);if(!c)return;s.hand=s.hand.filter(x=>x!==c);t.hand.push(c);afterLose(s);log(`${s.g.name}交给${t.g.name}一张牌`);render();}
   else{log(`${s.g.name}因【${sk(t,'enyuan')}】失去1点体力`);await loseHp(s,1);if(G.over)return;}}
@@ -259,14 +259,14 @@ const ACTIVES={
   const t=opp(p);if(!await respond(t,'bi',`【恶战】打出【避】？`)){await damage(p,t,1,sk(p,'ezhan'));if(!G.over)drawCards(p,1);}}},
  quce:{can:p=>p.hand.length>=1,need:1,async run(p,cards){const r=await pindian(p,opp(p),cards[0]);if(r.win){const c=r.cards[1]||r.cards.find(x=>x!==cards[0]);if(c){G.discard=G.discard.filter(x=>x!==c);p.hand.push(c);}log(`${p.g.name}获得对方的拼点牌`);}else randDiscard(p);render();}},
  duanliang:{times:2,can:p=>p.hand.some(ACT_F.duanliang),need:1,filter:c=>ACT_F.duanliang(c),async run(p,cards){removeCard(p,cards[0]);log(`${p.g.name}将${cname(cards[0])}当【破阵】`);fxCard(p,cards[0],'pozhen',false);const t=opp(p);if(await pozhen(p,t)){t.drawMinus=(t.drawMinus||0)+1;log(`${t.g.name}下回合少摸1张`);}}},
- renwang:{can:p=>p.hand.length>=2,need:2,async run(p,cards){cards.forEach(c=>removeCard(p,c));const h=p.hp<p.maxHp&&await yesno(p,'回复1点体力？（否则摸2张）',p.hp<=2);if(h)await heal(p,1);else drawCards(p,2);}},
+ renwang:{can:p=>p.hand.length>=2,need:2,async run(p,cards){cards.forEach(c=>removeCard(p,c));const h=p.hp<p.maxHp&&await yesno(p,'回复1点体力？（否则摸3张）',p.hp<=2);if(h)await heal(p,1);else drawCards(p,3);}},
  chifeng:{times:99,can:p=>canZhan(p)&&p.hand.some(ACT_F.chifeng),need:1,filter:c=>ACT_F.chifeng(c),async run(p,cards){await playCard(p,cards[0],'zhan');},silent:true},
- longdan:{times:99,can:p=>canZhan(p)&&p.hand.some(c=>c.k==='bi'),need:1,filter:c=>c.k==='bi',async run(p,cards){await playCard(p,cards[0],'zhan');log(`${p.g.name}【龙胆】摸1张`);drawCards(p,1);},silent:true},
+ longdan:{times:99,can:p=>canZhan(p)&&p.hand.some(c=>c.k==='bi'),need:1,filter:c=>c.k==='bi',async run(p,cards){await playCard(p,cards[0],'zhan');if(!p.longdanDrew){p.longdanDrew=true;log(`${p.g.name}【龙胆】摸1张`);drawCards(p,1);}},silent:true},
  qimou:{limited:true,can:p=>p.hp>1,need:0,async run(p){const max=p.hp-1;const zh=p.hand.filter(c=>c.k==='zhan').length;
   const x=p.ai?Math.max(1,Math.min(max,zh-1,p.hp-2)):await ask(p,'失去几点体力？',Array.from({length:max},(_,i)=>({label:String(i+1),val:i+1})));
   p.extraZhan=(p.extraZhan||0)+x;log(`${p.g.name}失去${x}点体力，本回合多出${x}张斩`);await loseHp(p,x);}},
  lianhuan:{can:p=>p.hand.some(c=>c.s==='club')&&opp(p).hand.length,need:1,filter:c=>c.s==='club',async run(p,cards){removeCard(p,cards[0]);randDiscard(opp(p),'被【连环】');}},
- tiaoxin:{can:p=>p.hand.length>=1,need:1,async run(p,cs){removeCard(p,cs[0]);const t=opp(p);const ok=await respond(t,'zhan',`${p.g.name}【挑衅】：对其使用【斩】？（否则被弃牌）`);
+ tiaoxin:{can:p=>true,need:0,async run(p){const t=opp(p);const ok=await respond(t,'zhan',`${p.g.name}【挑衅】：对其使用【斩】？（否则被弃牌）`);
   if(ok){await doZhan(t,p,null);}else{randDiscard(t,'被【挑衅】');}}},
  xuanhuo:{can:p=>p.hand.some(c=>c.k==='yao')&&opp(p).hand.length,need:1,filter:c=>c.k==='yao',async run(p,cards){removeCard(p,cards[0]);steal(p,opp(p));steal(p,opp(p));}},
  zhiheng:{can:p=>p.hand.length>=1,needAny:true,need:1,async run(p,cards){const all=cards.length===p.hand.length;cards.forEach(c=>removeCard(p,c));drawCards(p,cards.length+(all?1:0));if(all)log(`${p.g.name}【${sk(p,'zhiheng')}】弃置全部手牌，额外摸1张`);}},
@@ -328,7 +328,7 @@ async function zhanMiss(p,t){
  if(has(p,'chongqi')){const j=await judge(p,sk(p,'chongqi'),x=>x.s==='diamond');if(j.s==='diamond')await damage(p,t,1,sk(p,'chongqi'));}}
 async function zhanHit(p,t,card){
  if(has(p,'xiandeng')){if(t.hand.length)randDiscard(t,'因【先登】');drawCards(p,1);}
- if(has(p,'longyin')){p.zhanUsed=Math.max(0,p.zhanUsed-1);log(`${p.g.name}【${sk(p,'longyin')}】摸1张，此斩不计次数`);drawCards(p,1);}if(has(p,'nuhou')&&p.zhanUsed===2){log(`${p.g.name}【怒吼】摸1张`);drawCards(p,1);}
+ if(has(p,'longyin')&&!p.longyinUsed){p.longyinUsed=true;p.zhanUsed=Math.max(0,p.zhanUsed-1);log(`${p.g.name}【${sk(p,'longyin')}】摸1张，此斩不计次数`);drawCards(p,1);}if(has(p,'nuhou')&&p.zhanUsed===2){log(`${p.g.name}【怒吼】摸1张`);drawCards(p,1);}
  if(p.fupoOn){p.fupoOn=false;p.extraZhan=(p.extraZhan||0)+1;log(`${p.g.name}【${sk(p,'fupo')}】：斩次数+1`);}
  if(has(p,'lieren')&&t.hand.length){steal(p,t);log(`${p.g.name}【烈刃】获得手牌`);}}
 async function turnStart(p,t){
@@ -409,7 +409,7 @@ function aiSel2(p,act){const k=act.s.k;if(k==='fupo'){const cs=aiDiscardOrder(p)
 
 // ---- 回合 ----
 const FATIGUE_T=20;// 第11轮起每回合开始失去1点体力，防止拖局
-async function turn(p){if(G.over)return;G.cur=p;p.zyMode=null;Object.assign(p,{zhanUsed:0,used:{},extraZhan:0,xiangleUsed:false,longdanDrew:false,yinxue:false,huxiaoUsed:false,luozhanOn:false,tianyiBonus:0,noZhan:false,zhaxiangOn:false,chifengFree:false,zhanguUsed:false,zhanguOn:false,usedCnt:0,trickUsed:false,dealt:false,hardNext:false,xianzhenOn:false,xiongluanOn:false,wzMinus:0,yangweiOn:false,fangquanOn:false,huangxuT:false,zxUsed:false,zxOn:false,zxDone:false,zcOn:false,xuying:false});opp(p).noBi=false;opp(p).xiangleUsed=false;G.turnNo++;G.guardT=opp(p).hp>=opp(p).maxHp?opp(p):null;if(window.HARNESS)window.__oppFull=opp(p).hp>=opp(p).maxHp;
+async function turn(p){if(G.over)return;G.cur=p;p.zyMode=null;Object.assign(p,{zhanUsed:0,used:{},extraZhan:0,xiangleUsed:false,longdanDrew:false,longyinUsed:false,yinxue:false,huxiaoUsed:false,luozhanOn:false,tianyiBonus:0,noZhan:false,zhaxiangOn:false,chifengFree:false,zhanguUsed:false,zhanguOn:false,usedCnt:0,trickUsed:false,dealt:false,hardNext:false,xianzhenOn:false,xiongluanOn:false,wzMinus:0,yangweiOn:false,fangquanOn:false,huangxuT:false,zxUsed:false,zxOn:false,zxDone:false,zcOn:false,xuying:false});opp(p).noBi=false;opp(p).xiangleUsed=false;G.turnNo++;G.guardT=opp(p).hp>=opp(p).maxHp?opp(p):null;if(window.HARNESS)window.__oppFull=opp(p).hp>=opp(p).maxHp;
  log(`—— 第${G.turnNo}回合：${p.g.name} ——`);render();const t=opp(p);
  if(G.turnNo>FATIGUE_T){log(`【兵疲】${p.g.name}失去1点体力`);await loseHp(p,1);if(G.over)return;}
  if(has(p,'zhiji')&&!p.woke&&!p.hand.length){p.woke=true;p.maxHp--;p.hp=Math.min(p.hp,p.maxHp);log(`${p.g.name}觉醒【${sk(p,'zhiji')}】`);await heal(p,1);drawCards(p,1);p.gained=[ZHANXING];}
