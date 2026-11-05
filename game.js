@@ -561,9 +561,9 @@ function openSheet(sheet,closeSel,opener){closeSheets();if(sheet)sheet.classList
 function dismissSheet(){const back=sheetOpener;closeSheets();focusEl(back);}
 function toggleLog(){if(promptOpen)return;if(logExpanded){collapseLog();hideScrim();focusEl($('#logOpen'));return;}closeSheets();logExpanded=true;const sheet=$('#logSheet');if(sheet)sheet.classList.add('is-open');parkLog();const log=$('#log');if(log&&typeof log.removeAttribute==='function')log.removeAttribute('aria-hidden');const btn=$('#logOpen');if(btn){btn.textContent='关闭';btn.className='btn-on-paper';setAttr(btn,'aria-label','关闭');}showScrim();focusEl(btn);}
 function onScrim(){if(promptOpen)return;if(exitOpen){closeExit();return;}const back=logExpanded?$('#logOpen'):sheetOpener;closeSheets();focusEl(back);}
-function openExit(){if(promptOpen)return;const exit=$('#exit');if(exit&&exit.disabled)return;closeSheets();exitOpen=true;const box=$('#exitConfirm');if(box)box.classList.remove('hide');showScrim();focusEl($('#exitStay'));}
+function openExit(){if(promptOpen)return;const exit=$('#exit');if(exit&&exit.disabled)return;closeSheets();exitOpen=true;const box=$('#exitConfirm');if(box){const p=box.querySelector('p');const leave=$('#exitLeave');if(p)p.textContent=G.tut?'跳过教程并回大厅？之后可自由选将、联机与残局。':'离开这局？未结束的对局会直接断开。';if(leave)leave.textContent=G.tut?'跳过教程':'离开';box.classList.remove('hide');}showScrim();focusEl($('#exitStay'));}
 function closeExit(){exitOpen=false;const box=$('#exitConfirm');if(box)box.classList.add('hide');hideScrim();focusEl($('#exit'));}
-function leaveMatch(){if(NET)location.href=location.pathname;else location.reload();}
+function leaveMatch(){if(G.tut){try{localStorage.sgTutDone='1';}catch(e){}}if(NET)location.href=location.pathname;else location.reload();}
 function equipText(card){if(!card)return '无';const d=CARD_DEFS[card.k];return d?`${d.n}：${d.t}`:'无';}
 function showSkill(which){if(promptOpen||!G.P)return;const p=G.P[which];if(!p||!p.g)return;const body=$('#skillBody');if(!body)return;body.innerHTML=skillSheetHtml(which);openSheet($('#skillSheet'),'#skillClose',$(which===0?'#me':'#ai'));skillWho=which;}
 function showPrompt(msg,opts,onChoose){closeSheets();promptOpen=true;const box=$('#prompt');box.innerHTML='';const p=document.createElement('p');p.textContent=msg;box.appendChild(p);const wrap=document.createElement('div');wrap.className='prompt-opts'+(opts.length===2?' cols-2':'');for(const o of opts){const b=document.createElement('button');b.type='button';b.className='btn-secondary';b.textContent=o.label;b.onclick=()=>{box.classList.add('hide');promptOpen=false;syncExit();hideScrim();onChoose(o.val);};wrap.appendChild(b);}box.appendChild(wrap);box.classList.remove('hide');showScrim();syncExit();}
@@ -669,6 +669,8 @@ function tryStartNet(){if(NET.myPick&&NET.guestPick)start(NET.myPick,NET.guestPi
 // ---- 首胜教程 ----
 const TUT_ME='caocao',TUT_AI='xuchu';
 function tutDone(){try{return localStorage.sgTutDone==='1';}catch(e){return true;}}
+function markTutDone(){try{localStorage.sgTutDone='1';}catch(e){}}
+function skipTutorial(){markTutDone();location.reload();}
 function tutDeal(){const [me,ai]=G.P;ai.hp=ai.maxHp=3;const take=k=>{const i=G.deck.findIndex(c=>c.k===k);return i<0?topCard():G.deck.splice(i,1)[0];};
  ['zhan','zhan','bi','yao'].forEach(k=>me.hand.push(take(k)));['zhan','zhan','yao'].forEach(k=>ai.hand.push(take(k)));
  for(let i=0;i<4;i++){const j=G.deck.findIndex(c=>c.k==='zhan');if(j>=0)G.deck.push(G.deck.splice(j,1)[0]);}
@@ -756,7 +758,7 @@ if(!tut&&!(mode&&mode.type==='puzzle')){G.zyOn=true;G.P.forEach(p=>{p.az=AZ_KEYS
  while(!G.over&&G.gen===gen){if(window.HARNESS&&G.turnNo>80){log('HARNESS回合上限');const A=G.P[0],B=G.P[1];endGame(A.hp!==B.hp?(A.hp>B.hp?A:B):(A.hand.length>=B.hand.length?A:B));break;}if(cur===0&&G.mode&&G.mode.type==='puzzle'&&++G.myTurns>G.mode.pz.limit){log(`【残局】已超过 ${G.mode.pz.limit} 回合，挑战失败`);G.timeUp=true;endGame(G.P[1]);break;}await turn(G.P[cur]);cur=1-cur;}}
 function initLobby(){const sp=new URLSearchParams(location.search),room=normCode(sp.get('r')||sp.get('room'));
  const jc=$('#joinCode');if(jc){jc.oninput=()=>{jc.value=normCode(jc.value).slice(0,6);};const go=()=>{const c=normCode(jc.value);if(c.length<4){jc.focus();return;}joinRoom(c);};$('#joinBtn').onclick=go;jc.onkeydown=e=>{if(e.key==='Enter')go();};}
- $('#pve').onclick=()=>{closeSheets();selectScreen();};$('#host').onclick=()=>{$('#modes').classList.add('hide');hostRoom();};
+ $('#pve').onclick=()=>{closeSheets();selectScreen();};const skipEl=$('#skipTut');if(skipEl){skipEl.classList.add('hide');skipEl.onclick=skipTutorial;}$('#host').onclick=()=>{$('#modes').classList.add('hide');hostRoom();};
  const st=JSON.parse(localStorage.sgStats||'{"w":0,"l":0}');$('#stats').textContent=`人机战绩 ${st.w} 胜 ${st.l} 负 · 武将池 ${GENERALS.length} 位，每局随机 8 位`;
  $('#confirm').onclick=confirmPick;
  $('#back').onclick=()=>location.reload();
@@ -769,7 +771,7 @@ function initLobby(){const sp=new URLSearchParams(location.search),room=normCode
  $('#logOpen').onclick=toggleLog;$('#scrim').onclick=onScrim;
  $('#puzzleBtn').onclick=openPuzzles;$('#dailyBtn').onclick=()=>{closeSheets();openDaily();};
  if(room){joinRoom(room);return;}
- if(!window.HARNESS&&!/auto/.test(location.search)&&!tutDone()){$('#pve').textContent='首胜教程（约 3 分钟）';$('#pve').onclick=startTutorial;$('#host').classList.add('hide');$('#joinRow').classList.add('hide');$('#puzzleBtn').classList.add('hide');$('#dailyBtn').classList.add('hide');$('#selectTitle').textContent='新手请先完成首胜教程';return;}
+ if(!window.HARNESS&&!/auto/.test(location.search)&&!tutDone()){$('#pve').textContent='首胜教程（约 3 分钟）';$('#pve').onclick=startTutorial;$('#host').classList.add('hide');$('#joinRow').classList.add('hide');$('#puzzleBtn').classList.add('hide');$('#dailyBtn').classList.add('hide');$('#selectTitle').textContent='新手请先完成首胜教程（也可跳过）';const sk=$('#skipTut');if(sk){sk.classList.remove('hide');sk.onclick=skipTutorial;}return;}
  const q=new URLSearchParams(location.search);setTimeout(()=>{if(q.get('pz'))startPuzzle(+q.get('pz'));else if(q.get('daily'))openDaily();},0);}
 $('#ruleBox').innerHTML='<h3>规则</h3><p>回合：摸2张 → 出牌 → 弃牌至手牌上限（=当前体力+1）。把对方体力打到0即获胜。双方起手4张。</p><p><b>花色与判定</b>：每张牌有花色（♠♥♣♦）与点数（A–K），判定=亮出牌堆顶一张牌；拼点=双方各出一张手牌比点数。</p><p><b>护体</b>：回合开始时对方体力全满，则本回合无法将其击杀（至多打到1）。</p><p><b>兵疲</b>：第21回合起，每名角色回合开始时失去1点体力。</p>'+Object.values(CARD_DEFS).map(d=>`<p><b>【${d.n}】</b>×${d.cnt} ${d.t}</p>`).join('');
 initLobby();
